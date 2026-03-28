@@ -1,0 +1,12 @@
+flask
+python-dotenv
+openai
+groq
+torch
+transformers
+datasets
+seqeval
+pandas
+numpy
+scikit-learn
+openai-whisper

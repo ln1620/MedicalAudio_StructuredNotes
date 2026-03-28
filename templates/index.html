@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Audio — Clinical Notes</title>
+    <style>
+        :root {
+            --bg: #0f1419;
+            --card: #1a2332;
+            --text: #e7ecf3;
+            --muted: #8b9eb5;
+            --accent: #3d9cf0;
+            --border: #2e3f55;
+            --record: #e05252;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            margin: 0;
+            padding: 2rem 1.25rem 3rem;
+            max-width: 52rem;
+            margin-inline: auto;
+        }
+        h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.25rem; }
+        .tagline { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+        .modes {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        @media (min-width: 640px) {
+            .modes { grid-template-columns: 1fr 1fr; }
+        }
+        .mode-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+        }
+        .mode-card h2 {
+            font-size: 0.95rem;
+            margin: 0 0 0.65rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+        input[type="file"] {
+            color: var(--muted);
+            width: 100%;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+        button {
+            background: var(--accent);
+            color: #041018;
+            border: none;
+            padding: 0.55rem 1.1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        button:hover:not(:disabled) { filter: brightness(1.08); }
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        button.danger {
+            background: var(--record);
+            color: #fff;
+        }
+        button.secondary {
+            background: #2a3d52;
+            color: var(--text);
+        }
+        .status {
+            font-size: 0.85rem;
+            color: var(--muted);
+            min-height: 1.4em;
+            margin-top: 0.5rem;
+        }
+        .status.recording {
+            color: var(--record);
+            font-weight: 600;
+        }
+        .hint {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+        .disclaimer {
+            background: rgba(201, 162, 39, 0.12);
+            border: 1px solid rgba(201, 162, 39, 0.35);
+            color: #e8d89a;
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+        .error {
+            background: rgba(220, 80, 80, 0.15);
+            border: 1px solid rgba(220, 80, 80, 0.45);
+            color: #f0b0b0;
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.15rem;
+            margin-bottom: 1.25rem;
+        }
+        .panel h2 { font-size: 1.05rem; margin: 0 0 0.65rem; color: var(--muted); font-weight: 600; }
+        .panel.transcript p { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
+        .meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem; }
+        .section {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .section h3 {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--accent);
+            margin: 0 0 0.4rem;
+            font-weight: 600;
+        }
+        .section p { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
+    </style>
+</head>
+<body>
+
+    <h1>Medical audio → clinical-style notes</h1>
+    <p class="tagline">Speech is transcribed, then drafted into structured subjective documentation (not a diagnosis).</p>
+
+    <div class="disclaimer">
+        <strong>Important:</strong> This tool is for documentation assistance only. It can mishear speech or misinterpret text.
+        A clinician must review and edit all output. Do not use as a substitute for professional judgment.
+    </div>
+
+    {% if error_message %}
+        <div class="error">{{ error_message }}</div>
+    {% endif %}
+
+    <div class="modes">
+        <div class="mode-card">
+            <h2>1 — Upload a file</h2>
+            <form method="POST" enctype="multipart/form-data" id="form-upload">
+                <input type="file" name="audio" accept=".wav,.mp3,.m4a,.webm,.ogg,audio/*" required>
+                <button type="submit">Generate note</button>
+            </form>
+            <p class="hint">Use an existing recording (WAV, MP3, M4A, WebM, OGG).</p>
+        </div>
+
+        <div class="mode-card">
+            <h2>2 — Speak (microphone)</h2>
+            <p class="hint" id="mic-unsupported" style="display:none;">Your browser does not support in-browser recording. Use file upload instead.</p>
+            <form method="POST" enctype="multipart/form-data" id="form-record">
+                <input type="file" name="audio" id="record-audio-input" accept="audio/*" hidden aria-hidden="true">
+                <div class="btn-row">
+                    <button type="button" class="secondary" id="btn-mic-start">Start speaking</button>
+                    <button type="button" class="danger" id="btn-mic-stop" disabled>Stop</button>
+                    <button type="submit" id="btn-mic-submit" disabled>Generate note</button>
+                </div>
+                <div class="status" id="mic-status"></div>
+                <p class="hint">Allow the microphone when asked. Click <strong>Stop</strong> when finished, then <strong>Generate note</strong>. The browser records locally; audio is sent to the server like a file upload.</p>
+            </form>
+        </div>
+    </div>
+
+    {% if transcription %}
+        <div class="panel transcript">
+            <h2>Transcript</h2>
+            <p>{{ transcription }}</p>
+        </div>
+    {% endif %}
+
+    {% if clinical_note %}
+        <div class="panel">
+            <h2>Structured note (subjective)</h2>
+            {% if clinical_note.get('_source') %}
+                <p class="meta">Generated via: {{ clinical_note['_source'] }}</p>
+            {% endif %}
+            {% if sections %}
+                {% for sec in sections %}
+                    <div class="section">
+                        <h3>{{ sec.title }}</h3>
+                        <p>{{ sec.body }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p>No note sections returned.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <script>
+    (function () {
+        var startBtn = document.getElementById('btn-mic-start');
+        var stopBtn = document.getElementById('btn-mic-stop');
+        var submitBtn = document.getElementById('btn-mic-submit');
+        var statusEl = document.getElementById('mic-status');
+        var fileInput = document.getElementById('record-audio-input');
+        var unsupported = document.getElementById('mic-unsupported');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+            unsupported.style.display = 'block';
+            startBtn.disabled = true;
+            return;
+        }
+
+        var mediaRecorder = null;
+        var chunks = [];
+        var stream = null;
+
+        function pickMimeType() {
+            var types = [
+                'audio/webm;codecs=opus',
+                'audio/webm',
+                'audio/ogg;codecs=opus',
+                'audio/mp4',
+                'audio/mpeg'
+            ];
+            for (var i = 0; i < types.length; i++) {
+                if (MediaRecorder.isTypeSupported(types[i])) return types[i];
+            }
+            return '';
+        }
+
+        startBtn.addEventListener('click', function () {
+            statusEl.textContent = 'Requesting microphone…';
+            statusEl.className = 'status';
+            chunks = [];
+            var mimeType = pickMimeType();
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function (s) {
+                    stream = s;
+                    var opts = mimeType ? { mimeType: mimeType } : {};
+                    mediaRecorder = new MediaRecorder(s, opts);
+                    mediaRecorder.ondataavailable = function (e) {
+                        if (e.data && e.data.size > 0) chunks.push(e.data);
+                    };
+                    mediaRecorder.onstop = function () {
+                        if (stream) {
+                            stream.getTracks().forEach(function (t) { t.stop(); });
+                            stream = null;
+                        }
+                        var blobType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || 'audio/webm';
+                        var blob = new Blob(chunks, { type: blobType });
+                        if (blob.size === 0) {
+                            statusEl.textContent = 'No audio captured. Try again.';
+                            statusEl.className = 'status';
+                            submitBtn.disabled = true;
+                            return;
+                        }
+                        var ext = 'webm';
+                        if (blobType.indexOf('mp4') !== -1 || blobType.indexOf('m4a') !== -1 || blobType.indexOf('aac') !== -1) ext = 'm4a';
+                        else if (blobType.indexOf('ogg') !== -1) ext = 'ogg';
+                        var filename = 'recording.' + ext;
+                        var file = new File([blob], filename, { type: blobType });
+                        var dt = new DataTransfer();
+                        dt.items.add(file);
+                        fileInput.files = dt.files;
+                        statusEl.textContent = 'Ready (' + Math.round(blob.size / 1024) + ' KB). Click Generate note.';
+                        statusEl.className = 'status';
+                        submitBtn.disabled = false;
+                    };
+                    mediaRecorder.start(250);
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    submitBtn.disabled = true;
+                    statusEl.textContent = 'Recording… speak now.';
+                    statusEl.className = 'status recording';
+                })
+                .catch(function (err) {
+                    statusEl.textContent = 'Microphone error: ' + (err && err.message ? err.message : 'permission denied');
+                    statusEl.className = 'status';
+                });
+        });
+
+        stopBtn.addEventListener('click', function () {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusEl.className = 'status';
+        });
+    })();
+    </script>
+</body>
+</html>
