@@ -89,4 +89,6 @@ def index():
 if __name__ == "__main__":
     # macOS often uses port 5000 for AirPlay Receiver; default to 5001 to avoid "Address already in use".
     port = int(os.environ.get("PORT", 5001))
-    app.run(debug=True, host="127.0.0.1", port=port)
+    # Single process by default: avoids loading Whisper twice (reloader spawns a child process).
+    use_reloader = os.environ.get("FLASK_USE_RELOADER", "0").lower() in ("1", "true", "yes")
+    app.run(debug=True, host="127.0.0.1", port=port, use_reloader=use_reloader)

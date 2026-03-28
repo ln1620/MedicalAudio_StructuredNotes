@@ -3,384 +3,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Audio — Clinical Notes</title>
+    <title>Subjective note — audio intake</title>
     <style>
         :root {
-            --bg: #0f1419;
-            --card: #1a2332;
-            --text: #e7ecf3;
-            --muted: #8b9eb5;
-            --accent: #3d9cf0;
-            --border: #2e3f55;
-            --record: #e05252;
+            --ink: #0f172a;
+            --muted: #475569;
+            --page: #e8edf3;
+            --card: #ffffff;
+            --border: #cbd5e1;
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --teal: #0d9488;
+            --teal-dark: #0f766e;
+            --orange: #ea580c;
+            --orange-dark: #c2410c;
+            --violet: #7c3aed;
+            --cyan: #0891b2;
+            --amber-bg: #fffbeb;
+            --amber-border: #f59e0b;
         }
         * { box-sizing: border-box; }
         body {
-            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.55;
             margin: 0;
-            padding: 2rem 1.25rem 3rem;
-            max-width: 52rem;
-            margin-inline: auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.55;
+            color: var(--ink);
+            background: var(--page);
+            min-height: 100vh;
         }
-        h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.25rem; }
-        .tagline { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
-        .modes {
-            display: grid;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+        .shell { max-width: 920px; margin: 0 auto; padding: 1.25rem 1.25rem 3rem; }
+
+        /* Top title */
+        .page-title {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%);
+            color: #fff;
+            padding: 1.35rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
         }
-        @media (min-width: 640px) {
-            .modes { grid-template-columns: 1fr 1fr; }
+        .page-title h1 {
+            margin: 0;
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
         }
-        .mode-card {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1rem 1.1rem;
+        .page-title p {
+            margin: 0.5rem 0 0;
+            font-size: 0.875rem;
+            opacity: 0.92;
+            line-height: 1.45;
         }
-        .mode-card h2 {
-            font-size: 0.95rem;
-            margin: 0 0 0.65rem;
-            color: var(--muted);
-            font-weight: 600;
-        }
-        input[type="file"] {
-            color: var(--muted);
-            width: 100%;
-            margin-bottom: 0.75rem;
-            font-size: 0.9rem;
-        }
-        .btn-row {
+
+        /* Workflow steps */
+        .workflow {
             display: flex;
             flex-wrap: wrap;
-            gap: 0.5rem;
+            gap: 0.5rem 1rem;
             align-items: center;
-            margin-top: 0.5rem;
+            margin-bottom: 1.35rem;
+            padding: 0.75rem 1rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
         }
-        button {
-            background: var(--accent);
-            color: #041018;
-            border: none;
-            padding: 0.55rem 1.1rem;
-            border-radius: 6px;
+        .workflow-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            width: 100%;
+            margin-bottom: 0.15rem;
+        }
+        .step-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.8125rem;
             font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
+            color: var(--ink);
         }
-        button:hover:not(:disabled) { filter: brightness(1.08); }
-        button:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-        button.danger {
-            background: var(--record);
+        .step-pill .num {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
             color: #fff;
         }
-        button.secondary {
-            background: #2a3d52;
-            color: var(--text);
-        }
-        .status {
-            font-size: 0.85rem;
-            color: var(--muted);
-            min-height: 1.4em;
-            margin-top: 0.5rem;
-        }
-        .status.recording {
-            color: var(--record);
-            font-weight: 600;
-        }
-        .hint {
-            font-size: 0.8rem;
-            color: var(--muted);
-            margin-top: 0.5rem;
-            line-height: 1.4;
-        }
-        .disclaimer {
-            background: rgba(201, 162, 39, 0.12);
-            border: 1px solid rgba(201, 162, 39, 0.35);
-            color: #e8d89a;
-            padding: 0.65rem 0.85rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
+        .step-pill.n1 .num { background: var(--teal); }
+        .step-pill.n2 .num { background: var(--blue); }
+        .step-pill.n3 .num { background: var(--violet); }
+        .workflow-arrow { color: #94a3b8; font-size: 1rem; }
+
+        /* Notice */
+        .notice {
+            font-size: 0.8125rem;
+            color: #78350f;
+            background: var(--amber-bg);
+            border: 1px solid #fcd34d;
+            border-left: 4px solid var(--amber-border);
+            padding: 0.65rem 0.9rem;
+            border-radius: 6px;
             margin-bottom: 1.25rem;
         }
-        .error {
-            background: rgba(220, 80, 80, 0.15);
-            border: 1px solid rgba(220, 80, 80, 0.45);
-            color: #f0b0b0;
-            padding: 0.65rem 0.85rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-        .panel {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1rem 1.15rem;
+        .notice strong { color: #92400e; }
+
+        .error-banner {
+            font-size: 0.875rem;
+            color: #991b1b;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid #dc2626;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
             margin-bottom: 1.25rem;
         }
-        .panel h2 { font-size: 1.05rem; margin: 0 0 0.65rem; color: var(--muted); font-weight: 600; }
-        .panel.transcript p { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
-        .meta { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.75rem; }
-        .section {
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-        .section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .section h3 {
-            font-size: 0.82rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--accent);
-            margin: 0 0 0.4rem;
-            font-weight: 600;
-        }
-        .section p { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
-        .lang-panel {
+
+        /* Card with colored heading strip */
+        .card {
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1rem 1.1rem;
-            margin-bottom: 1rem;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1.1rem;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
         }
-        .lang-panel h2 {
-            font-size: 0.95rem;
-            margin: 0 0 0.75rem;
-            color: var(--muted);
-            font-weight: 600;
+        .card-head {
+            padding: 0.65rem 1.15rem;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: #fff;
         }
-        .lang-row {
-            display: grid;
-            gap: 0.75rem;
-        }
-        @media (min-width: 520px) {
-            .lang-row { grid-template-columns: 1fr 1fr; }
-        }
-        .lang-field label {
+        .card-head small {
             display: block;
-            font-size: 0.8rem;
-            color: var(--muted);
+            font-weight: 500;
+            opacity: 0.88;
+            font-size: 0.7rem;
+            margin-top: 0.2rem;
+        }
+        .card-head--lang { background: linear-gradient(90deg, var(--teal-dark), var(--teal)); }
+        .card-head--upload { background: linear-gradient(90deg, #1e40af, var(--blue)); }
+        .card-head--record { background: linear-gradient(90deg, var(--orange-dark), var(--orange)); }
+        .card-head--transcript { background: linear-gradient(90deg, #0e7490, var(--cyan)); }
+        .card-head--note { background: linear-gradient(90deg, #5b21b6, var(--violet)); }
+
+        .card-body { padding: 1.15rem 1.2rem 1.25rem; }
+
+        .grid-2 { display: grid; gap: 1rem; }
+        @media (min-width: 560px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+
+        .field label {
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #334155;
             margin-bottom: 0.35rem;
         }
-        .lang-field select {
+        .field select {
             width: 100%;
-            padding: 0.45rem 0.5rem;
+            padding: 0.55rem 0.65rem;
+            font-size: 0.875rem;
+            border: 2px solid #cbd5e1;
             border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
+            background: #f8fafc;
+            color: var(--ink);
+        }
+        .field select:focus {
+            outline: none;
+            border-color: var(--blue);
+            background: #fff;
+        }
+
+        details.hint-collapse {
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 0.75rem;
+        }
+        details.hint-collapse summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--blue-dark);
+        }
+
+        .split-actions { display: grid; gap: 1.1rem; }
+        @media (min-width: 680px) { .split-actions { grid-template-columns: 1fr 1fr; } }
+
+        input[type="file"] {
+            width: 100%;
+            font-size: 0.8125rem;
+            padding: 0.35rem 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.55rem 1.1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-primary { background: var(--blue); color: #fff; }
+        .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+        .btn-secondary { background: #e2e8f0; color: #334155; }
+        .btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+
+        .status-line {
+            font-size: 0.8125rem;
+            color: var(--muted);
+            min-height: 1.3rem;
+            margin-top: 0.5rem;
+        }
+        .status-line.live { color: #dc2626; font-weight: 700; }
+
+        .help-text {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 0.65rem;
+            line-height: 1.45;
+        }
+
+        .meta-line {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-bottom: 0.85rem;
+            padding: 0.4rem 0.6rem;
+            background: #f1f5f9;
+            border-radius: 4px;
+            font-family: ui-monospace, "Cascadia Code", monospace;
+        }
+
+        .transcript-text {
+            margin: 0;
+            white-space: pre-wrap;
             font-size: 0.9rem;
+            line-height: 1.6;
+            padding: 0.85rem 1rem;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            color: #0c4a6e;
+        }
+
+        /* Highlighted field headings in note — rotating colors */
+        .result-section { margin-bottom: 1rem; }
+        .result-section:last-child { margin-bottom: 0; }
+
+        .hl {
+            margin: 0 0 0.45rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            border-radius: 4px;
+            border-left: 5px solid;
+        }
+        .hl-a { background: #eff6ff; color: #1e40af; border-left-color: #2563eb; }
+        .hl-b { background: #f0fdfa; color: #0f766e; border-left-color: #14b8a6; }
+        .hl-c { background: #fffbeb; color: #92400e; border-left-color: #f59e0b; }
+        .hl-d { background: #faf5ff; color: #6b21a8; border-left-color: #a855f7; }
+        .hl-e { background: #fff1f2; color: #9f1239; border-left-color: #f43f5e; }
+
+        .field-body {
+            margin: 0;
+            white-space: pre-wrap;
+            font-size: 0.875rem;
+            color: #1e293b;
+            padding: 0 0.25rem 0.5rem 0.85rem;
+            border-left: 2px solid #e2e8f0;
+            margin-left: 0.35rem;
+        }
+
+        .processing-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.35);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        .processing-overlay.on { display: flex; }
+        .processing-overlay .box {
+            border: 2px solid var(--blue);
+            background: #fff;
+            padding: 1.25rem 1.75rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--blue-dark);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+        }
+
+        footer.legal {
+            margin-top: 2rem;
+            padding: 1rem;
+            font-size: 0.6875rem;
+            color: var(--muted);
+            background: #f1f5f9;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
         }
     </style>
 </head>
 <body>
 
-    <h1>Medical audio → clinical-style notes</h1>
-    <p class="tagline">Choose the language you speak and the language for the written note, then upload or record audio.</p>
+<div id="processing" class="processing-overlay" aria-live="polite" aria-busy="true">
+    <div class="box">Processing audio and generating the note…</div>
+</div>
 
-    <div class="lang-panel">
-        <h2>Languages</h2>
-        <div class="lang-row">
-            <div class="lang-field">
-                <label for="lang-speech">I will speak in</label>
-                <select id="lang-speech" aria-label="Speech language">
-                    {% for code, label in speech_language_options %}
-                    <option value="{{ code }}" {% if code == selected_speech %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="lang-field">
-                <label for="lang-note">Write the clinical note in</label>
-                <select id="lang-note" aria-label="Note language">
-                    {% for code, label in note_language_options %}
-                    <option value="{{ code }}" {% if code == selected_note %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        <p class="hint" style="margin-top:0.65rem;margin-bottom:0;">Choose <strong>Telugu</strong> (or Hindi, etc.) when you speak that language—then choose <strong>English</strong> for the note to get an English chart. Auto-detect is less reliable. For best Telugu accuracy, set <code>WHISPER_MODEL=small</code> or <code>medium</code> in <code>.env</code> (first run downloads the model).</p>
+<div class="shell">
+
+    <div class="page-title">
+        <h1>Subjective encounter note</h1>
+        <p>Turn speech into a draft clinical note. Choose languages first, then add audio (upload or record). A licensed clinician must review all output.</p>
     </div>
 
-    <div class="disclaimer">
-        <strong>Important:</strong> This tool is for documentation assistance only. It can mishear speech or misinterpret text.
-        A clinician must review and edit all output. Do not use as a substitute for professional judgment.
+    <div class="workflow" aria-label="Workflow">
+        <span class="workflow-label">How it works</span>
+        <span class="step-pill n1"><span class="num">1</span> Languages</span>
+        <span class="workflow-arrow" aria-hidden="true">→</span>
+        <span class="step-pill n2"><span class="num">2</span> Audio</span>
+        <span class="workflow-arrow" aria-hidden="true">→</span>
+        <span class="step-pill n3"><span class="num">3</span> Transcript &amp; draft</span>
+    </div>
+
+    <div class="notice">
+        <strong>Disclaimer:</strong> This is a documentation aid only. Transcription and text can be wrong. Do not use for diagnosis or treatment without professional review.
     </div>
 
     {% if error_message %}
-        <div class="error">{{ error_message }}</div>
+        <div class="error-banner" role="alert">{{ error_message }}</div>
     {% endif %}
 
-    <div class="modes">
-        <div class="mode-card">
-            <h2>1 — Upload a file</h2>
-            <form method="POST" enctype="multipart/form-data" id="form-upload">
-                <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
-                <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
-                <input type="file" name="audio" accept=".wav,.mp3,.m4a,.webm,.ogg,audio/*" required>
-                <button type="submit">Generate note</button>
-            </form>
-            <p class="hint">Use an existing recording (WAV, MP3, M4A, WebM, OGG).</p>
+    <div class="card">
+        <div class="card-head card-head--lang">
+            Step 1 — Language
+            <small>What is spoken in the recording, and what language should the written note use?</small>
+        </div>
+        <div class="card-body">
+            <div class="grid-2">
+                <div class="field">
+                    <label for="lang-speech">Speaker language (for transcription)</label>
+                    <select id="lang-speech" aria-label="Speech language">
+                        {% for code, label in speech_language_options %}
+                        <option value="{{ code }}" {% if code == selected_speech %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="lang-note">Written note language (output)</label>
+                    <select id="lang-note" aria-label="Note language">
+                        {% for code, label in note_language_options %}
+                        <option value="{{ code }}" {% if code == selected_note %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <details class="hint-collapse">
+                <summary>Optional: speed &amp; accuracy tips</summary>
+                <p style="margin:0.5rem 0 0;">Pick the language you actually speak. For Telugu/Indian languages, larger Whisper models in <code>.env</code> help accuracy; <code>WHISPER_MODEL=base</code> and <code>WHISPER_FAST=1</code> help speed.</p>
+            </details>
+        </div>
+    </div>
+
+    <div class="split-actions">
+        <div class="card">
+            <div class="card-head card-head--upload">
+                Step 2a — Upload file
+                <small>Use an existing audio file from your device.</small>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="form-upload" class="form-with-processing">
+                    <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
+                    <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
+                    <input type="file" name="audio" accept=".wav,.mp3,.m4a,.webm,.ogg,audio/*" required>
+                    <button type="submit" class="btn btn-primary">Generate note from file</button>
+                </form>
+                <p class="help-text">Formats: WAV, MP3, M4A, WebM, OGG.</p>
+            </div>
         </div>
 
-        <div class="mode-card">
-            <h2>2 — Speak (microphone)</h2>
-            <p class="hint" id="mic-unsupported" style="display:none;">Your browser does not support in-browser recording. Use file upload instead.</p>
-            <form method="POST" enctype="multipart/form-data" id="form-record">
-                <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
-                <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
-                <input type="file" name="audio" id="record-audio-input" accept="audio/*" hidden aria-hidden="true">
-                <div class="btn-row">
-                    <button type="button" class="secondary" id="btn-mic-start">Start speaking</button>
-                    <button type="button" class="danger" id="btn-mic-stop" disabled>Stop</button>
-                    <button type="submit" id="btn-mic-submit" disabled>Generate note</button>
-                </div>
-                <div class="status" id="mic-status"></div>
-                <p class="hint">Allow the microphone when asked. Click <strong>Stop</strong> when finished, then <strong>Generate note</strong>. The browser records locally; audio is sent to the server like a file upload.</p>
-            </form>
+        <div class="card">
+            <div class="card-head card-head--record">
+                Step 2b — Record here
+                <small>Speak now; your browser records the microphone.</small>
+            </div>
+            <div class="card-body">
+                <p class="help-text" id="mic-unsupported" style="display:none;color:#b91c1c;font-weight:600;">Recording is not supported in this browser. Use upload instead.</p>
+                <form method="POST" enctype="multipart/form-data" id="form-record" class="form-with-processing">
+                    <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
+                    <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
+                    <input type="file" name="audio" id="record-audio-input" accept="audio/*" hidden aria-hidden="true">
+                    <div class="btn-row">
+                        <button type="button" class="btn btn-secondary" id="btn-mic-start">Start</button>
+                        <button type="button" class="btn btn-danger" id="btn-mic-stop" disabled>Stop</button>
+                        <button type="submit" class="btn btn-primary" id="btn-mic-submit" disabled>Generate note</button>
+                    </div>
+                    <div class="status-line" id="mic-status"></div>
+                </form>
+                <p class="help-text">Allow the microphone when asked → <strong>Stop</strong> when done → <strong>Generate note</strong>.</p>
+            </div>
         </div>
     </div>
 
     {% if transcription %}
-        <div class="panel transcript">
-            <h2>Transcript</h2>
-            <p class="meta">Speech: {{ selected_speech }} · Note output: {{ selected_note }}</p>
-            <p>{{ transcription }}</p>
+    <div class="card">
+        <div class="card-head card-head--transcript">
+            Step 3a — Transcript
+            <small>Raw speech-to-text (verify before trusting).</small>
         </div>
+        <div class="card-body">
+            <p class="meta-line">Speech setting: {{ selected_speech }} · Note target: {{ selected_note }}</p>
+            <p class="transcript-text">{{ transcription }}</p>
+        </div>
+    </div>
     {% endif %}
 
     {% if clinical_note %}
-        <div class="panel">
-            <h2>Structured note (subjective)</h2>
+    {% set hl = ['a','b','c','d','e'] %}
+    <div class="card">
+        <div class="card-head card-head--note">
+            Step 3b — Draft subjective note
+            <small>Structured sections below; headings are color-coded for quick scanning.</small>
+        </div>
+        <div class="card-body">
             {% if clinical_note.get('_source') %}
-                <p class="meta">Generated via: {{ clinical_note['_source'] }}{% if clinical_note.get('_speech_language') %} · Speech setting: {{ clinical_note['_speech_language'] }}{% endif %}{% if clinical_note.get('_note_language') %} · Note language: {{ clinical_note['_note_language'] }}{% endif %}</p>
+            <p class="meta-line">Engine: {{ clinical_note['_source'] }}{% if clinical_note.get('_speech_language') %} · speech {{ clinical_note['_speech_language'] }}{% endif %}{% if clinical_note.get('_note_language') %} · note {{ clinical_note['_note_language'] }}{% endif %}</p>
             {% endif %}
             {% if sections %}
                 {% for sec in sections %}
-                    <div class="section">
-                        <h3>{{ sec.title }}</h3>
-                        <p>{{ sec.body }}</p>
-                    </div>
+                <div class="result-section">
+                    <h3 class="hl hl-{{ hl[loop.index0 % 5] }}">{{ sec.title }}</h3>
+                    <p class="field-body">{{ sec.body }}</p>
+                </div>
                 {% endfor %}
             {% else %}
-                <p>No note sections returned.</p>
+                <p class="field-body">No sections returned.</p>
             {% endif %}
         </div>
+    </div>
     {% endif %}
 
-    <script>
-    (function () {
-        function syncLangHiddens() {
-            var speech = document.getElementById('lang-speech');
-            var note = document.getElementById('lang-note');
-            if (!speech || !note) return;
-            var sv = speech.value;
-            var nv = note.value;
-            document.querySelectorAll('.sync-speech').forEach(function (el) { el.value = sv; });
-            document.querySelectorAll('.sync-note').forEach(function (el) { el.value = nv; });
+    <footer class="legal">
+        Draft documentation tool only. Follow institutional policy, privacy rules, and professional standards. No guarantee of accuracy.
+    </footer>
+</div>
+
+<script>
+(function () {
+    function syncLangHiddens() {
+        var speech = document.getElementById('lang-speech');
+        var note = document.getElementById('lang-note');
+        if (!speech || !note) return;
+        document.querySelectorAll('.sync-speech').forEach(function (el) { el.value = speech.value; });
+        document.querySelectorAll('.sync-note').forEach(function (el) { el.value = note.value; });
+    }
+    var langSpeech = document.getElementById('lang-speech');
+    var langNote = document.getElementById('lang-note');
+    if (langSpeech) langSpeech.addEventListener('change', syncLangHiddens);
+    if (langNote) langNote.addEventListener('change', syncLangHiddens);
+    syncLangHiddens();
+
+    document.querySelectorAll('.form-with-processing').forEach(function (form) {
+        form.addEventListener('submit', function () {
+            var ov = document.getElementById('processing');
+            if (ov) ov.classList.add('on');
+        });
+    });
+
+    var startBtn = document.getElementById('btn-mic-start');
+    var stopBtn = document.getElementById('btn-mic-stop');
+    var submitBtn = document.getElementById('btn-mic-submit');
+    var statusEl = document.getElementById('mic-status');
+    var fileInput = document.getElementById('record-audio-input');
+    var unsupported = document.getElementById('mic-unsupported');
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+        if (unsupported) unsupported.style.display = 'block';
+        if (startBtn) startBtn.disabled = true;
+        return;
+    }
+
+    var mediaRecorder = null;
+    var chunks = [];
+    var stream = null;
+
+    function pickMimeType() {
+        var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/mpeg'];
+        for (var i = 0; i < types.length; i++) {
+            if (MediaRecorder.isTypeSupported(types[i])) return types[i];
         }
-        var langSpeech = document.getElementById('lang-speech');
-        var langNote = document.getElementById('lang-note');
-        if (langSpeech) langSpeech.addEventListener('change', syncLangHiddens);
-        if (langNote) langNote.addEventListener('change', syncLangHiddens);
-        syncLangHiddens();
+        return '';
+    }
 
-        var startBtn = document.getElementById('btn-mic-start');
-        var stopBtn = document.getElementById('btn-mic-stop');
-        var submitBtn = document.getElementById('btn-mic-submit');
-        var statusEl = document.getElementById('mic-status');
-        var fileInput = document.getElementById('record-audio-input');
-        var unsupported = document.getElementById('mic-unsupported');
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
-            unsupported.style.display = 'block';
-            startBtn.disabled = true;
-            return;
-        }
-
-        var mediaRecorder = null;
-        var chunks = [];
-        var stream = null;
-
-        function pickMimeType() {
-            var types = [
-                'audio/webm;codecs=opus',
-                'audio/webm',
-                'audio/ogg;codecs=opus',
-                'audio/mp4',
-                'audio/mpeg'
-            ];
-            for (var i = 0; i < types.length; i++) {
-                if (MediaRecorder.isTypeSupported(types[i])) return types[i];
-            }
-            return '';
-        }
-
-        startBtn.addEventListener('click', function () {
-            statusEl.textContent = 'Requesting microphone…';
-            statusEl.className = 'status';
-            chunks = [];
-            var mimeType = pickMimeType();
-            navigator.mediaDevices.getUserMedia({ audio: true })
-                .then(function (s) {
-                    stream = s;
-                    var opts = mimeType ? { mimeType: mimeType } : {};
-                    mediaRecorder = new MediaRecorder(s, opts);
-                    mediaRecorder.ondataavailable = function (e) {
-                        if (e.data && e.data.size > 0) chunks.push(e.data);
-                    };
-                    mediaRecorder.onstop = function () {
-                        if (stream) {
-                            stream.getTracks().forEach(function (t) { t.stop(); });
-                            stream = null;
-                        }
-                        var blobType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || 'audio/webm';
-                        var blob = new Blob(chunks, { type: blobType });
-                        if (blob.size === 0) {
-                            statusEl.textContent = 'No audio captured. Try again.';
-                            statusEl.className = 'status';
-                            submitBtn.disabled = true;
-                            return;
-                        }
-                        var ext = 'webm';
-                        if (blobType.indexOf('mp4') !== -1 || blobType.indexOf('m4a') !== -1 || blobType.indexOf('aac') !== -1) ext = 'm4a';
-                        else if (blobType.indexOf('ogg') !== -1) ext = 'ogg';
-                        var filename = 'recording.' + ext;
-                        var file = new File([blob], filename, { type: blobType });
-                        var dt = new DataTransfer();
-                        dt.items.add(file);
-                        fileInput.files = dt.files;
+    if (startBtn) startBtn.addEventListener('click', function () {
+        if (statusEl) { statusEl.textContent = 'Requesting microphone…'; statusEl.className = 'status-line'; }
+        chunks = [];
+        var mimeType = pickMimeType();
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function (s) {
+                stream = s;
+                var opts = mimeType ? { mimeType: mimeType } : {};
+                mediaRecorder = new MediaRecorder(s, opts);
+                mediaRecorder.ondataavailable = function (e) {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+                mediaRecorder.onstop = function () {
+                    if (stream) {
+                        stream.getTracks().forEach(function (t) { t.stop(); });
+                        stream = null;
+                    }
+                    var blobType = (mediaRecorder && mediaRecorder.mimeType) || mimeType || 'audio/webm';
+                    var blob = new Blob(chunks, { type: blobType });
+                    if (blob.size === 0) {
+                        if (statusEl) { statusEl.textContent = 'No audio captured.'; statusEl.className = 'status-line'; }
+                        if (submitBtn) submitBtn.disabled = true;
+                        return;
+                    }
+                    var ext = 'webm';
+                    if (blobType.indexOf('mp4') !== -1 || blobType.indexOf('m4a') !== -1 || blobType.indexOf('aac') !== -1) ext = 'm4a';
+                    else if (blobType.indexOf('ogg') !== -1) ext = 'ogg';
+                    var file = new File([blob], 'recording.' + ext, { type: blobType });
+                    var dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    if (statusEl) {
                         statusEl.textContent = 'Ready (' + Math.round(blob.size / 1024) + ' KB). Click Generate note.';
-                        statusEl.className = 'status';
-                        submitBtn.disabled = false;
-                    };
-                    mediaRecorder.start(250);
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    submitBtn.disabled = true;
-                    statusEl.textContent = 'Recording… speak now.';
-                    statusEl.className = 'status recording';
-                })
-                .catch(function (err) {
-                    statusEl.textContent = 'Microphone error: ' + (err && err.message ? err.message : 'permission denied');
-                    statusEl.className = 'status';
-                });
-        });
+                        statusEl.className = 'status-line';
+                    }
+                    if (submitBtn) submitBtn.disabled = false;
+                };
+                mediaRecorder.start(250);
+                startBtn.disabled = true;
+                if (stopBtn) stopBtn.disabled = false;
+                if (submitBtn) submitBtn.disabled = true;
+                if (statusEl) {
+                    statusEl.textContent = 'Recording…';
+                    statusEl.className = 'status-line live';
+                }
+            })
+            .catch(function (err) {
+                if (statusEl) {
+                    statusEl.textContent = 'Microphone: ' + (err && err.message ? err.message : 'unavailable');
+                    statusEl.className = 'status-line';
+                }
+            });
+    });
 
-        stopBtn.addEventListener('click', function () {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            statusEl.className = 'status';
-        });
-    })();
-    </script>
+    if (stopBtn) stopBtn.addEventListener('click', function () {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        if (startBtn) startBtn.disabled = false;
+        stopBtn.disabled = true;
+        if (statusEl) statusEl.className = 'status-line';
+    });
+})();
+</script>
 </body>
 </html>
