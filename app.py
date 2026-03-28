@@ -12,6 +12,13 @@ sys.path.append(os.path.abspath("src"))
 
 from audio_pipeline import audio_to_text
 from clinical_note_generator import NOTE_SCHEMA_KEYS, generate_clinical_document
+from languages import (
+    NOTE_LANGUAGE_OPTIONS,
+    SPEECH_LANGUAGE_OPTIONS,
+    get_section_titles,
+    normalize_note_language,
+    normalize_speech_language,
+)
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB — room for longer mic recordings
@@ -19,27 +26,20 @@ app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB — room for longer
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Human-readable section titles for the template
-SECTION_TITLES = {
-    "chief_complaint": "Chief complaint",
-    "history_of_present_illness": "History of present illness",
-    "context_aggravating_or_relief": "Context / aggravating & relieving factors",
-    "associated_symptoms": "Associated symptoms",
-    "timeline_and_duration": "Timeline & duration",
-    "review_of_systems_pertinent": "Review of systems (pertinent)",
-    "pertinent_negatives": "Pertinent negatives (if stated)",
-    "summary_for_clinician": "Brief clinical summary",
-    "documentation_note": "Documentation note",
-}
-
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     transcription = ""
     clinical_note = None
     error_message = None
+    selected_speech = "auto"
+    selected_note = "en"
 
     if request.method == "POST":
+        selected_speech = request.form.get("speech_language", "auto").strip() or "auto"
+        raw_note = request.form.get("note_language", "en").strip() or "en"
+        selected_note = normalize_note_language(raw_note)
+
         file = request.files.get("audio")
         if not file or not file.filename:
             error_message = "Please choose an audio file or record from the microphone."
@@ -51,15 +51,24 @@ def index():
                 filepath = os.path.join(UPLOAD_FOLDER, safe_name)
                 file.save(filepath)
                 try:
-                    transcription = audio_to_text(filepath)
-                    clinical_note = generate_clinical_document(transcription)
+                    whisper_lang = normalize_speech_language(selected_speech)
+                    transcription = audio_to_text(filepath, language=whisper_lang)
+                    clinical_note = generate_clinical_document(
+                        transcription,
+                        note_language=selected_note,
+                        speech_language=selected_speech,
+                    )
                 except Exception as exc:
                     error_message = f"Processing failed: {exc}"
 
     sections = None
     if clinical_note:
+        note_lang = clinical_note.get("_note_language") or normalize_note_language(
+            selected_note
+        )
+        titles = get_section_titles(note_lang)
         sections = [
-            {"id": k, "title": SECTION_TITLES[k], "body": clinical_note.get(k, "")}
+            {"id": k, "title": titles.get(k, k), "body": clinical_note.get(k, "")}
             for k in NOTE_SCHEMA_KEYS
             if clinical_note.get(k)
         ]
@@ -70,8 +79,14 @@ def index():
         clinical_note=clinical_note,
         sections=sections,
         error_message=error_message,
+        speech_language_options=SPEECH_LANGUAGE_OPTIONS,
+        note_language_options=NOTE_LANGUAGE_OPTIONS,
+        selected_speech=selected_speech,
+        selected_note=selected_note,
     )
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    # macOS often uses port 5000 for AirPlay Receiver; default to 5001 to avoid "Address already in use".
+    port = int(os.environ.get("PORT", 5001))
+    app.run(debug=True, host="127.0.0.1", port=port)

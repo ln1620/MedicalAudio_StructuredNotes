@@ -142,12 +142,70 @@
             font-weight: 600;
         }
         .section p { margin: 0; white-space: pre-wrap; font-size: 0.95rem; }
+        .lang-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .lang-panel h2 {
+            font-size: 0.95rem;
+            margin: 0 0 0.75rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+        .lang-row {
+            display: grid;
+            gap: 0.75rem;
+        }
+        @media (min-width: 520px) {
+            .lang-row { grid-template-columns: 1fr 1fr; }
+        }
+        .lang-field label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-bottom: 0.35rem;
+        }
+        .lang-field select {
+            width: 100%;
+            padding: 0.45rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
     <h1>Medical audio → clinical-style notes</h1>
-    <p class="tagline">Speech is transcribed, then drafted into structured subjective documentation (not a diagnosis).</p>
+    <p class="tagline">Choose the language you speak and the language for the written note, then upload or record audio.</p>
+
+    <div class="lang-panel">
+        <h2>Languages</h2>
+        <div class="lang-row">
+            <div class="lang-field">
+                <label for="lang-speech">I will speak in</label>
+                <select id="lang-speech" aria-label="Speech language">
+                    {% for code, label in speech_language_options %}
+                    <option value="{{ code }}" {% if code == selected_speech %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="lang-field">
+                <label for="lang-note">Write the clinical note in</label>
+                <select id="lang-note" aria-label="Note language">
+                    {% for code, label in note_language_options %}
+                    <option value="{{ code }}" {% if code == selected_note %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <p class="hint" style="margin-top:0.65rem;margin-bottom:0;">Choose <strong>Telugu</strong> (or Hindi, etc.) when you speak that language—then choose <strong>English</strong> for the note to get an English chart. Auto-detect is less reliable. For best Telugu accuracy, set <code>WHISPER_MODEL=small</code> or <code>medium</code> in <code>.env</code> (first run downloads the model).</p>
+    </div>
 
     <div class="disclaimer">
         <strong>Important:</strong> This tool is for documentation assistance only. It can mishear speech or misinterpret text.
@@ -162,6 +220,8 @@
         <div class="mode-card">
             <h2>1 — Upload a file</h2>
             <form method="POST" enctype="multipart/form-data" id="form-upload">
+                <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
+                <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
                 <input type="file" name="audio" accept=".wav,.mp3,.m4a,.webm,.ogg,audio/*" required>
                 <button type="submit">Generate note</button>
             </form>
@@ -172,6 +232,8 @@
             <h2>2 — Speak (microphone)</h2>
             <p class="hint" id="mic-unsupported" style="display:none;">Your browser does not support in-browser recording. Use file upload instead.</p>
             <form method="POST" enctype="multipart/form-data" id="form-record">
+                <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
+                <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
                 <input type="file" name="audio" id="record-audio-input" accept="audio/*" hidden aria-hidden="true">
                 <div class="btn-row">
                     <button type="button" class="secondary" id="btn-mic-start">Start speaking</button>
@@ -187,6 +249,7 @@
     {% if transcription %}
         <div class="panel transcript">
             <h2>Transcript</h2>
+            <p class="meta">Speech: {{ selected_speech }} · Note output: {{ selected_note }}</p>
             <p>{{ transcription }}</p>
         </div>
     {% endif %}
@@ -195,7 +258,7 @@
         <div class="panel">
             <h2>Structured note (subjective)</h2>
             {% if clinical_note.get('_source') %}
-                <p class="meta">Generated via: {{ clinical_note['_source'] }}</p>
+                <p class="meta">Generated via: {{ clinical_note['_source'] }}{% if clinical_note.get('_speech_language') %} · Speech setting: {{ clinical_note['_speech_language'] }}{% endif %}{% if clinical_note.get('_note_language') %} · Note language: {{ clinical_note['_note_language'] }}{% endif %}</p>
             {% endif %}
             {% if sections %}
                 {% for sec in sections %}
@@ -212,6 +275,21 @@
 
     <script>
     (function () {
+        function syncLangHiddens() {
+            var speech = document.getElementById('lang-speech');
+            var note = document.getElementById('lang-note');
+            if (!speech || !note) return;
+            var sv = speech.value;
+            var nv = note.value;
+            document.querySelectorAll('.sync-speech').forEach(function (el) { el.value = sv; });
+            document.querySelectorAll('.sync-note').forEach(function (el) { el.value = nv; });
+        }
+        var langSpeech = document.getElementById('lang-speech');
+        var langNote = document.getElementById('lang-note');
+        if (langSpeech) langSpeech.addEventListener('change', syncLangHiddens);
+        if (langNote) langNote.addEventListener('change', syncLangHiddens);
+        syncLangHiddens();
+
         var startBtn = document.getElementById('btn-mic-start');
         var stopBtn = document.getElementById('btn-mic-stop');
         var submitBtn = document.getElementById('btn-mic-submit');
