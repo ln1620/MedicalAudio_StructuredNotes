@@ -218,7 +218,14 @@
         .btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
         .btn-danger { background: #dc2626; color: #fff; }
         .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .btn-pdf {
+            background: #fff;
+            color: #1e40af;
+            border: 2px solid #1e40af;
+        }
+        .btn-pdf:hover:not(:disabled) { background: #eff6ff; }
         .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .pdf-actions { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px dashed #cbd5e1; }
 
         .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 
@@ -454,6 +461,13 @@
             {% else %}
                 <p class="field-body">No sections returned.</p>
             {% endif %}
+            {% if pdf_payload %}
+            <div class="pdf-actions">
+                <button type="button" class="btn btn-pdf" id="btn-download-pdf">Download PDF</button>
+                <span class="help-text" style="display:inline-block;margin-left:0.75rem;vertical-align:middle;">Exports transcript and structured sections. Disclaimer is printed on the first page.</span>
+            </div>
+            <script type="application/json" id="pdf-payload">{{ pdf_payload | tojson }}</script>
+            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -570,6 +584,43 @@
         stopBtn.disabled = true;
         if (statusEl) statusEl.className = 'status-line';
     });
+
+    var pdfBtn = document.getElementById('btn-download-pdf');
+    var pdfPayloadEl = document.getElementById('pdf-payload');
+    if (pdfBtn && pdfPayloadEl) {
+        pdfBtn.addEventListener('click', function () {
+            var data;
+            try {
+                data = JSON.parse(pdfPayloadEl.textContent);
+            } catch (e) {
+                alert('Could not read note data for PDF.');
+                return;
+            }
+            pdfBtn.disabled = true;
+            fetch('/export/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+                .then(function (r) {
+                    if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || r.statusText); });
+                    return r.blob();
+                })
+                .then(function (blob) {
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'clinical-note-draft.pdf';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                })
+                .catch(function (err) {
+                    alert('PDF export failed: ' + (err.message || err));
+                })
+                .finally(function () {
+                    pdfBtn.disabled = false;
+                });
+        });
+    }
 })();
 </script>
 </body>

@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request
+from flask import Flask, jsonify, render_template, request, send_file
+from io import BytesIO
 import os
 import sys
 
@@ -11,6 +12,7 @@ load_dotenv()
 sys.path.append(os.path.abspath("src"))
 
 from audio_pipeline import audio_to_text
+from pdf_export import build_clinical_pdf_bytes
 from clinical_note_generator import NOTE_SCHEMA_KEYS, generate_clinical_document
 from languages import (
     NOTE_LANGUAGE_OPTIONS,
@@ -73,6 +75,18 @@ def index():
             if clinical_note.get(k)
         ]
 
+    pdf_payload = None
+    if clinical_note:
+        pdf_payload = {
+            "transcription": transcription or "",
+            "sections": [
+                {"title": s["title"], "body": s["body"]}
+                for s in (sections or [])
+            ],
+            "speech": selected_speech,
+            "note": selected_note,
+        }
+
     return render_template(
         "index.html",
         transcription=transcription,
@@ -83,6 +97,34 @@ def index():
         note_language_options=NOTE_LANGUAGE_OPTIONS,
         selected_speech=selected_speech,
         selected_note=selected_note,
+        pdf_payload=pdf_payload,
+    )
+
+
+@app.route("/export/pdf", methods=["POST"])
+def export_pdf():
+    """Generate PDF from JSON body (same content as shown on the results page)."""
+    data = request.get_json(silent=True) or {}
+    transcription = data.get("transcription") or ""
+    sections = data.get("sections")
+    if not isinstance(sections, list):
+        sections = []
+    speech = data.get("speech") or ""
+    note = data.get("note") or ""
+    try:
+        pdf_bytes = build_clinical_pdf_bytes(
+            transcription,
+            sections,
+            speech_setting=str(speech),
+            note_setting=str(note),
+        )
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="clinical-note-draft.pdf",
     )
 
 
