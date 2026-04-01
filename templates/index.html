@@ -528,7 +528,14 @@
         if (statusEl) { statusEl.textContent = 'Requesting microphone…'; statusEl.className = 'status-line'; }
         chunks = [];
         var mimeType = pickMimeType();
-        navigator.mediaDevices.getUserMedia({ audio: true })
+        navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: false,
+                autoGainControl: true,
+                channelCount: 1
+            }
+        })
             .then(function (s) {
                 stream = s;
                 var opts = mimeType ? { mimeType: mimeType } : {};
@@ -561,7 +568,8 @@
                     }
                     if (submitBtn) submitBtn.disabled = false;
                 };
-                mediaRecorder.start(250);
+                /* One continuous recording: avoid chunked captures that some browsers mishandle (drops mid-speech). */
+                mediaRecorder.start();
                 startBtn.disabled = true;
                 if (stopBtn) stopBtn.disabled = false;
                 if (submitBtn) submitBtn.disabled = true;

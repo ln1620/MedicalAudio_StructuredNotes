@@ -55,12 +55,17 @@ def audio_to_text(audio_path, language=None):
     beam_default = "1" if (os.getenv("WHISPER_FAST", "").lower() in ("1", "true", "yes")) else "2"
     beam = int(os.getenv("WHISPER_BEAM_SIZE", beam_default))
 
+    # no_speech_threshold: lower = keep more quiet audio (default 0.6 often skips softer mid-sentence speech)
+    no_speech = float(os.getenv("WHISPER_NO_SPEECH_THRESHOLD", "0.45"))
     decode_kwargs = {
         "verbose": False,
         "fp16": _fp16_for_device(),
         "beam_size": max(1, beam),
         "task": "transcribe",
+        "no_speech_threshold": max(0.0, min(1.0, no_speech)),
     }
+    if os.getenv("WHISPER_CONDITION_ON_PREVIOUS", "").lower() in ("0", "false", "no"):
+        decode_kwargs["condition_on_previous_text"] = False
     if language:
         decode_kwargs["language"] = language
 

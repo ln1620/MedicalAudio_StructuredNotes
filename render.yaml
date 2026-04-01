@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: healthcare-voice-doc-assistant
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      # Add your API keys in Render dashboard (Environment tab):
+      # - GROQ_API_KEY
+      # - OPENAI_API_KEY (if you use OpenAI)
+      # Any Whisper tuning vars you want, e.g. WHISPER_NO_SPEECH_THRESHOLD

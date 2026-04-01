@@ -133,4 +133,6 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5001))
     # Single process by default: avoids loading Whisper twice (reloader spawns a child process).
     use_reloader = os.environ.get("FLASK_USE_RELOADER", "0").lower() in ("1", "true", "yes")
-    app.run(debug=True, host="127.0.0.1", port=port, use_reloader=use_reloader)
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    debug = os.environ.get("FLASK_DEBUG", "1").lower() in ("1", "true", "yes")
+    app.run(debug=debug, host=host, port=port, use_reloader=use_reloader)
