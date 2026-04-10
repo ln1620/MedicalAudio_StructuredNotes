@@ -4,11 +4,16 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --workers 1 --threads 2 --timeout 180
     autoDeploy: true
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
+      # Render free instances are memory-limited; keep Whisper lightweight by default.
+      - key: WHISPER_DEVICE
+        value: "cpu"
+      - key: WHISPER_MODEL
+        value: "base"
       # Add your API keys in Render dashboard (Environment tab):
       # - GROQ_API_KEY
       # - OPENAI_API_KEY (if you use OpenAI)
