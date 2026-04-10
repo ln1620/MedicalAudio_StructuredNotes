@@ -38,7 +38,7 @@ cp .env.example .env
 python app.py
 ```
 
-Open **http://127.0.0.1:5001** (or the port shown in the terminal; default avoids macOS port 5000 conflicts).
+
 
 ### Environment variables
 
