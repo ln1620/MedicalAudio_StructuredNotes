@@ -1,88 +1,105 @@
-# Healthcare Voice Documentation Assistant
+# Hospital Intake — Audio to Clinical Note
 
-An **AI-assisted pipeline** that turns patient speech into **structured clinical-style notes**: record or upload audio → **Whisper** transcription → **LLM** (Groq or OpenAI-compatible) generates sectioned JSON → optional **PDF** export. Supports **multiple speech languages** with configurable **note language** (e.g. Telugu speech → English note).
+I built this as a **hospital-style intake web app** that helps turn **patient speech** into a **reviewable transcript** and a **structured draft clinical note**.
 
-> **Disclaimer:** This is a research / prototype tool. It is **not** a medical device and must **not** replace professional documentation or clinical judgment. Do not use real patient identifiers on public deployments without proper compliance review.
+It works in two main modes:
+- **Audio → Draft note**: upload/record audio → speech-to-text → structured note + optional PDF
+- **Speak to a doctor (AI)**: an interactive intake conversation where the AI asks follow-ups, then generates a visit summary and safe suggestions
 
-## Features
+> **Disclaimer:** This is a prototype documentation aid. It is **not** a medical device and does **not** replace professional clinical judgment. Do not use real patient identifiers in demos or public deployments.
 
-- Browser **microphone** recording or **audio file** upload  
-- **OpenAI Whisper** for speech-to-text (language auto or fixed)  
-- **Structured clinical note** fields (chief complaint, HPI, timeline, ROS, etc.) via LLM, with a **heuristic fallback** when no API is configured  
-- **PDF download** (Unicode-friendly fonts)  
-- **Multilingual** UI options driven by `src/languages.py`
+## What I can do with it
+- **Multilingual speech-to-text** (I use Google Cloud Speech-to-Text by default, with local Whisper fallback)
+- **Any-language patient speech → English translation panel** (optional) for clinician readability
+- **Structured clinical-style note** (chief complaint, HPI, timeline, ROS, etc.) via Groq/OpenAI-compatible LLMs, with a heuristic fallback if no API key is set
+- **PDF export** of transcript + structured sections
+- **AI doctor conversation**: follow-up questions + “Finish visit” summary + safety guardrails
 
-## Stack
-
-- **Backend:** Python 3, Flask  
-- **ASR:** `openai-whisper`, PyTorch  
-- **LLM:** Groq (`groq`) and/or OpenAI-compatible APIs (`openai` client)  
-- **PDF:** ReportLab  
+## Tech stack
+- **Backend**: Python + Flask
+- **Speech-to-text (ASR)**:
+  - Google Cloud Speech-to-Text (recommended)
+  - Local Whisper fallback (`openai-whisper`)
+- **Translation**: Google Cloud Translation (optional)
+- **LLM notes & chat**: Groq or OpenAI-compatible APIs
+- **PDF**: ReportLab
 
 ## Prerequisites
+- **Python 3.10+** (I use 3.11 locally)
+- Optional for local Whisper: **ffmpeg**
+  - macOS: `brew install ffmpeg`
+  - Ubuntu: `sudo apt install ffmpeg`
 
-- **Python 3.10+** (recommended)  
-- **ffmpeg** installed and on your `PATH` (required by Whisper to read many audio formats)  
-  - macOS: `brew install ffmpeg`  
-  - Ubuntu: `sudo apt install ffmpeg`  
-
-## Local setup
+## Run locally
 
 ```bash
 cd /path/to/MAN
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env: set at least GROQ_API_KEY (or OpenAI keys — see .env.example)
 python app.py
 ```
 
+Then open `http://127.0.0.1:5001`.
 
+## Configure `.env` (high-signal variables)
+I keep real secrets in `.env` (and **do not commit** `.env` or `keys/`).
 
-### Environment variables
+### LLM (notes + AI doctor chat)
+- `GROQ_API_KEY` (recommended)
+- `GROQ_MODEL` (example: `llama-3.1-8b-instant`)
 
-Copy `.env.example` to `.env` and configure:
+Alternative:
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL` (optional)
+- `OPENAI_MODEL`
 
-| Variable | Purpose |
-|----------|---------|
-| `GROQ_API_KEY` | Recommended: fast LLM notes via Groq |
-| `GROQ_MODEL` | e.g. `llama-3.1-8b-instant` |
-| `OPENAI_API_KEY` / `OPENAI_BASE_URL` / `OPENAI_MODEL` | Alternative: OpenAI or compatible API |
-| `CLINICAL_NOTE_PROVIDER` | `groq` \| `openai` \| `local` \| `heuristic` |
-| `WHISPER_MODEL` | `base`, `small`, `medium`, … (quality vs speed / RAM) |
-| `WHISPER_DEVICE` | `cpu`, `cuda`, `mps`, or empty for auto |
-| `WHISPER_FAST`, `WHISPER_BEAM_SIZE` | Speed vs decoding quality |
-| `WHISPER_NO_SPEECH_THRESHOLD` | Lower if quiet speech is dropped |
-| `FLASK_DEBUG`, `FLASK_HOST`, `PORT` | Local server behavior |
+### Speech-to-text (multilingual)
+Recommended (cloud):
+- `ASR_ENGINE=google`
+- `GOOGLE_APPLICATION_CREDENTIALS=/absolute/path/to/service-account.json`
+- `GOOGLE_CLOUD_PROJECT=...` (needed for translation)
 
-See **`.env.example`** for full comments.
+Optional:
+- `TRANSLATE_TO_ENGLISH=1` (shows English translation panel when transcript isn’t English)
 
-## Deploy (Render)
+Local fallback (Whisper) tuning (optional):
+- `WHISPER_MODEL=base|small|medium|...`
+- `WHISPER_DEVICE=cpu|mps|cuda`
+- `WHISPER_FAST=1` and/or `WHISPER_BEAM_SIZE=...`
 
-This repo includes **`render.yaml`** for a **Render** web service:
+See `.env.example` for the full list and comments.
 
-- Build: `pip install -r requirements.txt`  
-- Start: `gunicorn` with extended timeout (Whisper can be slow on first request)  
+## How I use it
+- If I’m speaking Telugu/Hindi/Tamil, I **select the language explicitly** for best accuracy.
+- I review the transcript first, then use the structured note as a draft.
+- In “Speak to a doctor (AI)”, I click **Finish visit** to generate a summary and next-step suggestions (still clinician-reviewed).
 
-On the Render dashboard, add **`GROQ_API_KEY`** (and optional Whisper overrides). Free-tier instances may sleep when idle.
-
-## Project layout (core app)
+## Project layout
 
 ```
 MAN/
-├── app.py                 # Flask app, routes
-├── requirements.txt
-├── render.yaml            # optional Render blueprint
-├── templates/index.html   # UI
-├── static/fonts/          # PDF Unicode fonts
+├── app.py
+├── templates/index.html
+├── static/
+│   ├── images/                 # hospital UI illustrations
+│   └── fonts/                  # PDF Unicode fonts
 └── src/
-    ├── audio_pipeline.py      # Whisper transcription
-    ├── clinical_note_generator.py  # LLM / heuristic notes
-    ├── languages.py           # speech & note language options
-    └── pdf_export.py          # PDF generation
+    ├── audio_pipeline.py       # ASR dispatcher + caching
+    ├── doctor_chat.py          # AI doctor conversation + visit summary
+    ├── translate_google.py     # English translation panel (optional)
+    ├── clinical_note_generator.py
+    ├── pdf_export.py
+    ├── languages.py
+    └── asr/
+        ├── base.py
+        ├── google_stt.py
+        └── whisper_local.py
 ```
 
-## License / usage
-
-Use responsibly. API keys and patient audio must be protected; prefer private deployment and access controls for anything beyond demos.
+## Responsible usage
+I treat this as a **documentation helper** only:
+- don’t enter real identifiers in demos
+- keep API keys private
+- always have a licensed clinician review output
