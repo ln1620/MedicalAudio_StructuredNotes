@@ -382,7 +382,14 @@
             </div>
             <details class="hint-collapse">
                 <summary>Optional: speed &amp; accuracy tips</summary>
-                <p style="margin:0.5rem 0 0;">Pick the language you actually speak. For Telugu/Indian languages, larger Whisper models in <code>.env</code> help accuracy; <code>WHISPER_MODEL=base</code> and <code>WHISPER_FAST=1</code> help speed.</p>
+                <p style="margin:0.5rem 0 0;">
+                    Leave <strong>Speaker language</strong> on <em>Auto-detect</em> for best multilingual results. If the transcript looks wrong (mixed scripts / random words),
+                    manually choose the language you spoke and retry.
+                </p>
+                <p style="margin:0.5rem 0 0;">
+                    If cloud STT is not configured, the app falls back to local Whisper. For Telugu/Indian languages, larger Whisper models in <code>.env</code> can improve accuracy;
+                    <code>WHISPER_MODEL=base</code> and <code>WHISPER_FAST=1</code> favor speed.
+                </p>
             </details>
         </div>
     </div>
@@ -434,8 +441,19 @@
             <small>Raw speech-to-text (verify before trusting).</small>
         </div>
         <div class="card-body">
-            <p class="meta-line">Speech setting: {{ selected_speech }} · Note target: {{ selected_note }}</p>
+            <p class="meta-line">
+                Speech setting: {{ selected_speech }}
+                · Note target: {{ selected_note }}
+                {% if asr_engine %} · ASR: {{ asr_engine }}{% endif %}
+                {% if detected_language %} · Detected: {{ detected_language }}{% endif %}
+            </p>
             <p class="transcript-text">{{ transcription }}</p>
+            {% if translation_en %}
+            <div style="margin-top:0.85rem;">
+                <div class="help-text" style="margin-top:0; font-weight:700; color:#1e40af;">English translation</div>
+                <p class="transcript-text" style="background:#f8fafc;border-color:#cbd5e1;color:#0f172a;">{{ translation_en }}</p>
+            </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}

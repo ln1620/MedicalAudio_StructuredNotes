@@ -12,6 +12,7 @@ load_dotenv()
 sys.path.append(os.path.abspath("src"))
 
 from audio_pipeline import audio_to_text
+from audio_pipeline import audio_to_text_result
 from pdf_export import build_clinical_pdf_bytes
 from clinical_note_generator import NOTE_SCHEMA_KEYS, generate_clinical_document
 from languages import (
@@ -21,6 +22,7 @@ from languages import (
     normalize_note_language,
     normalize_speech_language,
 )
+from translate_google import translate_to_english
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB — room for longer mic recordings
@@ -32,6 +34,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 @app.route("/", methods=["GET", "POST"])
 def index():
     transcription = ""
+    detected_language = None
+    asr_engine = None
+    translation_en = None
     clinical_note = None
     error_message = None
     selected_speech = "auto"
@@ -54,11 +59,23 @@ def index():
                 file.save(filepath)
                 try:
                     whisper_lang = normalize_speech_language(selected_speech)
-                    transcription = audio_to_text(filepath, language=whisper_lang)
+                    asr = audio_to_text_result(filepath, language=whisper_lang)
+                    transcription = asr.text
+                    detected_language = asr.detected_language
+                    asr_engine = asr.engine
+                    if (os.getenv("TRANSLATE_TO_ENGLISH", "1").strip().lower() in ("1", "true", "yes")):
+                        try:
+                            translation_en = translate_to_english(
+                                transcription,
+                                source_language=detected_language or whisper_lang or None,
+                            )
+                        except Exception:
+                            # Translation is optional; don’t fail the request if it errors.
+                            translation_en = None
                     clinical_note = generate_clinical_document(
                         transcription,
                         note_language=selected_note,
-                        speech_language=selected_speech,
+                        speech_language=detected_language or selected_speech,
                     )
                 except Exception as exc:
                     error_message = f"Processing failed: {exc}"
@@ -90,6 +107,9 @@ def index():
     return render_template(
         "index.html",
         transcription=transcription,
+        detected_language=detected_language,
+        asr_engine=asr_engine,
+        translation_en=translation_en,
         clinical_note=clinical_note,
         sections=sections,
         error_message=error_message,

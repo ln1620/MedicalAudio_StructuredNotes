@@ -10,5 +10,7 @@ pandas
 numpy
 scikit-learn
 openai-whisper
+google-cloud-speech
+google-cloud-translate
 reportlab
 gunicorn

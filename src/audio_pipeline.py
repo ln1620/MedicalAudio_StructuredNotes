@@ -1,84 +1,87 @@
+import hashlib
 import logging
 import os
+from collections import OrderedDict
 
-import torch
-import whisper
+from asr.base import ASRResult
 
 logger = logging.getLogger(__name__)
 
-_whisper_model = None
-_whisper_model_id: str | None = None
+
+def _engine_name() -> str:
+    return (os.getenv("ASR_ENGINE") or "").strip().lower() or "google"
 
 
-def _pick_device() -> str:
-    """Prefer GPU; on Apple Silicon use MPS when available (much faster than CPU)."""
-    override = (os.getenv("WHISPER_DEVICE") or "").strip().lower()
-    if override in ("cpu", "cuda", "mps"):
-        return override
-    if torch.cuda.is_available():
-        return "cuda"
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
+def _file_sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+_ASR_CACHE: "OrderedDict[str, ASRResult]" = OrderedDict()
+_ASR_CACHE_MAX = int(os.getenv("ASR_CACHE_MAX", "32"))
 
 
-def _get_whisper_model():
-    global _whisper_model, _whisper_model_id
-    name = (os.getenv("WHISPER_MODEL") or "small").strip() or "small"
-    if _whisper_model is None or _whisper_model_id != name:
-        device = _pick_device()
+def _cache_get(key: str) -> ASRResult | None:
+    hit = _ASR_CACHE.get(key)
+    if hit is None:
+        return None
+    _ASR_CACHE.move_to_end(key)
+    return hit
+
+
+def _cache_put(key: str, val: ASRResult) -> None:
+    _ASR_CACHE[key] = val
+    _ASR_CACHE.move_to_end(key)
+    while len(_ASR_CACHE) > max(1, _ASR_CACHE_MAX):
+        _ASR_CACHE.popitem(last=False)
+
+
+def _transcribe_uncached(audio_path: str, *, language: str | None) -> ASRResult:
+    engine = _engine_name()
+
+    if engine == "google":
         try:
-            _whisper_model = whisper.load_model(name, device=device)
+            from asr.google_stt import GoogleSpeechEngine, google_available
+
+            if google_available():
+                return GoogleSpeechEngine().transcribe(audio_path, language=language)
+            logger.info("Google STT selected but credentials not found; falling back to Whisper.")
         except Exception as e:
-            logger.warning("Whisper load on %s failed (%s); falling back to CPU.", device, e)
-            _whisper_model = whisper.load_model(name, device="cpu")
-            device = "cpu"
-        _whisper_model_id = name
-        logger.info("Whisper model=%s device=%s", name, device)
-    return _whisper_model
+            logger.warning("Google STT failed; falling back to Whisper (%s)", e, exc_info=False)
+
+    # Default / fallback: local Whisper (lazy import)
+    from asr.whisper_local import WhisperLocalEngine
+
+    return WhisperLocalEngine().transcribe(audio_path, language=language)
 
 
-def _fp16_for_device() -> bool:
-    d = _pick_device()
-    return d == "cuda"
-
-
-def audio_to_text(audio_path, language=None):
+def audio_to_text_result(audio_path: str, language: str | None = None) -> ASRResult:
     """
-    Transcribe audio. `language` is Whisper ISO 639-1 code or None for auto-detect.
+    Transcribe audio using the configured engine.
 
-    Speed: set WHISPER_MODEL=base and WHISPER_BEAM_SIZE=1 in .env for fastest CPU runs.
-    Quality (e.g. Telugu): prefer small/medium with beam 3–5.
+    Returns ASRResult(text, detected_language, engine).
     """
-    model = _get_whisper_model()
-    # beam_size 1 = greedy (fastest); 5 = slower, slightly better. Default 2 = balance.
-    beam_default = "1" if (os.getenv("WHISPER_FAST", "").lower() in ("1", "true", "yes")) else "2"
-    beam = int(os.getenv("WHISPER_BEAM_SIZE", beam_default))
+    try:
+        fp = os.path.abspath(audio_path)
+        digest = _file_sha256(fp)
+    except Exception:
+        fp = os.path.abspath(audio_path)
+        digest = f"{os.path.getmtime(fp)}:{os.path.getsize(fp)}"
 
-    # no_speech_threshold: lower = keep more quiet audio (default 0.6 often skips softer mid-sentence speech)
-    no_speech = float(os.getenv("WHISPER_NO_SPEECH_THRESHOLD", "0.45"))
-    decode_kwargs = {
-        "verbose": False,
-        "fp16": _fp16_for_device(),
-        "beam_size": max(1, beam),
-        "task": "transcribe",
-        "no_speech_threshold": max(0.0, min(1.0, no_speech)),
-    }
-    if os.getenv("WHISPER_CONDITION_ON_PREVIOUS", "").lower() in ("0", "false", "no"):
-        decode_kwargs["condition_on_previous_text"] = False
-    if language:
-        decode_kwargs["language"] = language
+    key = f"{_engine_name()}:{language or 'auto'}:{digest}"
+    cached = _cache_get(key)
+    if cached is not None:
+        return cached
 
-    if language == "te":
-        decode_kwargs["initial_prompt"] = os.getenv(
-            "WHISPER_TE_INITIAL_PROMPT",
-            "ఆరోగ్యం, నొప్పి, లక్షణాలు, మందులు, ఎప్పటి నుంచో.",
-        )
-    elif language == "hi":
-        decode_kwargs["initial_prompt"] = os.getenv(
-            "WHISPER_HI_INITIAL_PROMPT",
-            "स्वास्थ्य, दर्द, लक्षण, दवाइयाँ, कब से।",
-        )
+    res = _transcribe_uncached(fp, language=language)
+    _cache_put(key, res)
+    return res
 
-    result = model.transcribe(audio_path, **decode_kwargs)
-    return result["text"]
+
+def audio_to_text(audio_path: str, language: str | None = None) -> str:
+    """
+    Backwards-compatible helper: returns transcript text only.
+    """
+    return audio_to_text_result(audio_path, language=language).text

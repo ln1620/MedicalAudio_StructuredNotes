@@ -218,7 +218,11 @@ def get_speech_language_display_name(code: str | None) -> str:
     """English label for LLM prompts (speech dropdown / Whisper)."""
     if not code or str(code).strip().lower() in ("auto", "", "none"):
         return "unspecified (auto-detected; language may vary)"
-    c = str(code).strip().lower()
+    c = str(code).strip()
+    # Allow BCP-47 locale codes (e.g. te-IN) by reducing to base language.
+    if "-" in c:
+        c = c.split("-", 1)[0]
+    c = c.lower()
     return NOTE_LANGUAGE_NAMES.get(c, c)
 
 
@@ -227,3 +231,70 @@ def get_section_titles(note_lang_code: str) -> dict[str, str]:
     overrides = SECTION_TITLES_I18N.get(note_lang_code, {})
     base.update(overrides)
     return base
+
+
+# --- Cloud speech locale helpers (Google) ---
+
+_GOOGLE_SPEECH_LOCALE: dict[str, str] = {
+    "en": "en-US",
+    "hi": "hi-IN",
+    "te": "te-IN",
+    "ta": "ta-IN",
+    "kn": "kn-IN",
+    "ml": "ml-IN",
+    "mr": "mr-IN",
+    "bn": "bn-IN",
+    "gu": "gu-IN",
+    "pa": "pa-IN",
+    "ur": "ur-IN",
+    "es": "es-ES",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "it": "it-IT",
+    "pt": "pt-PT",
+    "zh": "zh-CN",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "ar": "ar-SA",
+    "ru": "ru-RU",
+    "tr": "tr-TR",
+    "pl": "pl-PL",
+    "nl": "nl-NL",
+    "vi": "vi-VN",
+    "th": "th-TH",
+    "id": "id-ID",
+    "ms": "ms-MY",
+    "sw": "sw-KE",
+    "el": "el-GR",
+    "he": "he-IL",
+    "fa": "fa-IR",
+    "uk": "uk-UA",
+}
+
+
+def to_google_speech_locale(code: str | None) -> str:
+    """
+    Convert UI ISO 639-1 code (e.g. 'te') to Google Speech-to-Text locale (BCP-47).
+    """
+    if not code:
+        return "en-US"
+    c = code.strip().lower()
+    return _GOOGLE_SPEECH_LOCALE.get(c, "en-US")
+
+
+def google_alternative_locales() -> list[str]:
+    """
+    Locales to enable language identification when the user selects Auto.
+    Keep this list small-ish to reduce confusion and latency.
+    """
+    # Prefer languages in the dropdown first.
+    codes = [c for (c, _) in SPEECH_LANGUAGE_OPTIONS if c != "auto"]
+    out: list[str] = []
+    for c in codes:
+        loc = to_google_speech_locale(c)
+        if loc not in out:
+            out.append(loc)
+    # Ensure English is first.
+    if "en-US" in out:
+        out.remove("en-US")
+    return ["en-US"] + out

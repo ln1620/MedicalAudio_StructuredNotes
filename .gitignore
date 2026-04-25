@@ -26,6 +26,9 @@ uploads/
 instance/
 *.log
 
+# Local credentials / service account keys
+keys/
+
 # Data and recordings (datasets, audio captures, exports)
 data/
 recordings/
