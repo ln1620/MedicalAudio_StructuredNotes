@@ -3,57 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subjective note — audio intake</title>
+    <title>Hospital intake — Audio to clinical note</title>
     <style>
         :root {
-            --ink: #0f172a;
-            --muted: #475569;
-            --page: #e8edf3;
+            --ink: #0b1220;
+            --muted: #4b5563;
+            --page: #f2f6fb;
             --card: #ffffff;
-            --border: #cbd5e1;
-            --blue: #2563eb;
-            --blue-dark: #1d4ed8;
-            --teal: #0d9488;
-            --teal-dark: #0f766e;
-            --orange: #ea580c;
-            --orange-dark: #c2410c;
-            --violet: #7c3aed;
-            --cyan: #0891b2;
+            --border: rgba(15, 23, 42, 0.12);
+            --shadow: 0 18px 50px rgba(2, 6, 23, 0.10);
+
+            --primary: #0f766e;
+            --primary-dark: #0f5f59;
+            --accent: #2563eb;
+            --accent-dark: #1d4ed8;
+            --danger: #dc2626;
+
             --amber-bg: #fffbeb;
             --amber-border: #f59e0b;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             font-size: 15px;
             line-height: 1.55;
             color: var(--ink);
             background: var(--page);
             min-height: 100vh;
         }
-        .shell { max-width: 920px; margin: 0 auto; padding: 1.25rem 1.25rem 3rem; }
-
-        /* Top title */
-        .page-title {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 55%, #2563eb 100%);
-            color: #fff;
-            padding: 1.35rem 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1.25rem;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+        /* Fluid layout: fill screen while keeping comfortable line-length */
+        .shell { width: min(1240px, calc(100vw - 2.5rem)); margin: 0 auto; padding: 1.1rem 0 3.2rem; }
+        @media (max-width: 520px) {
+            .shell { width: calc(100vw - 1.25rem); padding-top: 0.9rem; }
         }
-        .page-title h1 {
-            margin: 0;
-            font-size: 1.35rem;
-            font-weight: 700;
+
+        .fade-in {
+            animation: fadeIn 360ms ease-out both;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.65rem 0.15rem 0.95rem;
+        }
+        @media (max-width: 720px) {
+            .topbar { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
+            .topmeta { justify-content: flex-start; }
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            font-weight: 800;
             letter-spacing: -0.03em;
         }
-        .page-title p {
-            margin: 0.5rem 0 0;
-            font-size: 0.875rem;
-            opacity: 0.92;
-            line-height: 1.45;
+        .brand-badge {
+            width: 2.35rem;
+            height: 2.35rem;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, #14b8a6 55%, #60a5fa 100%);
+            box-shadow: 0 10px 26px rgba(15, 118, 110, 0.22);
+            position: relative;
+        }
+        .brand-badge:before, .brand-badge:after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+        }
+        .brand-badge:before { width: 0.62rem; height: 1.35rem; }
+        .brand-badge:after { width: 1.35rem; height: 0.62rem; }
+        .topmeta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            justify-content: flex-end;
+            color: var(--muted);
+            font-size: 0.78rem;
+        }
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.35rem 0.55rem;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(10px);
+        }
+        .dot {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+
+        .hero {
+            display: grid;
+            gap: 1rem;
+            align-items: center;
+            background: radial-gradient(1200px 500px at 10% 0%, rgba(37,99,235,0.18), transparent 60%),
+                        radial-gradient(900px 420px at 92% 0%, rgba(20,184,166,0.20), transparent 55%),
+                        linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.82) 100%);
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 20px;
+            padding: 1.15rem 1.15rem;
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            position: relative;
+        }
+        @media (min-width: 860px) {
+            .hero { grid-template-columns: 1.1fr 0.9fr; padding: 1.35rem 1.35rem; }
+        }
+        @media (min-width: 1100px) {
+            .hero { padding: 1.6rem 1.75rem; }
+        }
+        .hero h1 {
+            margin: 0;
+            font-size: 1.55rem;
+            letter-spacing: -0.04em;
+            line-height: 1.2;
+        }
+        .hero p { margin: 0.55rem 0 0; color: var(--muted); font-size: 0.94rem; }
+        .hero-actions {
+            margin-top: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.55rem;
+            align-items: center;
+        }
+        .hero-note {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 0.55rem;
+        }
+        .hero-art {
+            width: 100%;
+            max-width: 520px;
+            justify-self: center;
+            filter: drop-shadow(0 14px 28px rgba(2, 6, 23, 0.10));
+            transform: translateY(6px);
+        }
+        @media (max-width: 859px) {
+            .hero-art { max-width: 560px; transform: none; }
         }
 
         /* Workflow steps */
@@ -62,11 +165,15 @@
             flex-wrap: wrap;
             gap: 0.5rem 1rem;
             align-items: center;
-            margin-bottom: 1.35rem;
-            padding: 0.75rem 1rem;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            margin: 1rem 0 1.15rem;
+            padding: 0.85rem 1rem;
+            background: rgba(255,255,255,0.82);
+            border: 1px solid rgba(15,23,42,0.10);
+            border-radius: 14px;
+            box-shadow: 0 10px 24px rgba(2, 6, 23, 0.06);
+        }
+        @media (max-width: 520px) {
+            .workflow { padding: 0.75rem 0.85rem; }
         }
         .workflow-label {
             font-size: 0.75rem;
@@ -127,14 +234,21 @@
         /* Card with colored heading strip */
         .card {
             background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 16px;
             overflow: hidden;
-            margin-bottom: 1.1rem;
-            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+            margin-bottom: 1rem;
+            box-shadow: 0 14px 36px rgba(2, 6, 23, 0.08);
+            transform: translateZ(0);
+            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 48px rgba(2, 6, 23, 0.10);
+            border-color: rgba(37, 99, 235, 0.18);
         }
         .card-head {
-            padding: 0.65rem 1.15rem;
+            padding: 0.85rem 1.15rem;
             font-size: 0.8125rem;
             font-weight: 700;
             letter-spacing: 0.02em;
@@ -147,13 +261,16 @@
             font-size: 0.7rem;
             margin-top: 0.2rem;
         }
-        .card-head--lang { background: linear-gradient(90deg, var(--teal-dark), var(--teal)); }
-        .card-head--upload { background: linear-gradient(90deg, #1e40af, var(--blue)); }
-        .card-head--record { background: linear-gradient(90deg, var(--orange-dark), var(--orange)); }
-        .card-head--transcript { background: linear-gradient(90deg, #0e7490, var(--cyan)); }
-        .card-head--note { background: linear-gradient(90deg, #5b21b6, var(--violet)); }
+        .card-head--lang { background: linear-gradient(90deg, #0f5f59, var(--primary)); }
+        .card-head--upload { background: linear-gradient(90deg, #1e40af, var(--accent)); }
+        .card-head--record { background: linear-gradient(90deg, #0b3b8c, #60a5fa); }
+        .card-head--transcript { background: linear-gradient(90deg, #075985, #38bdf8); }
+        .card-head--note { background: linear-gradient(90deg, #312e81, #7c3aed); }
 
         .card-body { padding: 1.15rem 1.2rem 1.25rem; }
+        @media (max-width: 520px) {
+            .card-body { padding: 0.95rem 0.95rem 1.05rem; }
+        }
 
         .grid-2 { display: grid; gap: 1rem; }
         @media (min-width: 560px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
@@ -211,13 +328,19 @@
             border: none;
             cursor: pointer;
             font-family: inherit;
+            transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
         }
-        .btn-primary { background: var(--blue); color: #fff; }
-        .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+        .btn:active:not(:disabled) { transform: translateY(1px); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, #14b8a6 70%);
+            color: #fff;
+            box-shadow: 0 10px 18px rgba(15, 118, 110, 0.18);
+        }
+        .btn-primary:hover:not(:disabled) { filter: brightness(0.98); box-shadow: 0 14px 26px rgba(15, 118, 110, 0.22); }
         .btn-secondary { background: #e2e8f0; color: #334155; }
         .btn-secondary:hover:not(:disabled) { background: #cbd5e1; }
-        .btn-danger { background: #dc2626; color: #fff; }
-        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-danger:hover:not(:disabled) { filter: brightness(0.96); }
         .btn-pdf {
             background: #fff;
             color: #1e40af;
@@ -298,21 +421,112 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(15, 23, 42, 0.35);
+            background: rgba(2, 6, 23, 0.40);
             z-index: 100;
             align-items: center;
             justify-content: center;
+            animation: fadeOverlay 220ms ease-out both;
         }
         .processing-overlay.on { display: flex; }
         .processing-overlay .box {
-            border: 2px solid var(--blue);
-            background: #fff;
-            padding: 1.25rem 1.75rem;
-            border-radius: 8px;
+            border: 1px solid rgba(37, 99, 235, 0.28);
+            background: rgba(255,255,255,0.92);
+            padding: 1.05rem 1.25rem;
+            border-radius: 14px;
             font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--blue-dark);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+            font-weight: 700;
+            color: #0b3b8c;
+            box-shadow: 0 18px 60px rgba(2,6,23,0.22);
+            backdrop-filter: blur(10px);
+            min-width: min(420px, 92vw);
+        }
+        @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+        .section-grid {
+            display: grid;
+            gap: 1.1rem;
+        }
+        @media (min-width: 920px) { .section-grid { grid-template-columns: 1fr 1fr; } }
+        @media (min-width: 1240px) { .section-grid { gap: 1.25rem; } }
+
+        .panel {
+            display: flex;
+            gap: 0.9rem;
+            align-items: flex-start;
+        }
+        .panel img {
+            width: 3.25rem;
+            height: 3.25rem;
+            flex: 0 0 auto;
+        }
+
+        /* Chat UI */
+        .chat-shell {
+            display: grid;
+            gap: 0.9rem;
+        }
+        .chat-window {
+            height: 360px;
+            overflow: auto;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 14px;
+            padding: 0.9rem;
+            background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.92));
+        }
+        .bubble {
+            max-width: 85%;
+            padding: 0.65rem 0.8rem;
+            border-radius: 14px;
+            margin: 0.45rem 0;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            box-shadow: 0 10px 20px rgba(2, 6, 23, 0.06);
+            animation: fadeIn 260ms ease-out both;
+        }
+        .bubble.user {
+            margin-left: auto;
+            background: rgba(37, 99, 235, 0.08);
+        }
+        .bubble.assistant {
+            margin-right: auto;
+            background: rgba(15, 118, 110, 0.08);
+        }
+        .chat-controls {
+            display: grid;
+            gap: 0.6rem;
+        }
+        .chat-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        .chat-input {
+            flex: 1 1 320px;
+            min-width: 220px;
+            padding: 0.65rem 0.75rem;
+            border-radius: 10px;
+            border: 2px solid rgba(15, 23, 42, 0.12);
+            background: #fff;
+            font-size: 0.95rem;
+        }
+        .chat-input:focus { outline: none; border-color: rgba(37, 99, 235, 0.55); }
+        .btn-tertiary {
+            background: #ffffff;
+            color: #0b3b8c;
+            border: 2px solid rgba(37, 99, 235, 0.35);
+        }
+        .btn-tertiary:hover:not(:disabled) { background: rgba(37, 99, 235, 0.06); }
+        .chat-meta {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+        .summary-box {
+            border: 1px solid rgba(15, 23, 42, 0.10);
+            border-radius: 14px;
+            padding: 0.85rem 0.95rem;
+            background: #fff;
         }
 
         footer.legal {
@@ -332,11 +546,28 @@
     <div class="box">Processing audio and generating the note…</div>
 </div>
 
-<div class="shell">
+<div class="shell fade-in">
+    <div class="topbar" role="banner" aria-label="Hospital intake header">
+        <div class="brand">
+            <span class="brand-badge" aria-hidden="true"></span>
+            <span>Hospital Intake</span>
+        </div>
+        <div class="topmeta" aria-label="Session status">
+            <span class="pill"><span class="dot" aria-hidden="true"></span> Secure local session</span>
+            <span class="pill">Audio → Transcript → Draft note</span>
+        </div>
+    </div>
 
-    <div class="page-title">
-        <h1>Subjective encounter note</h1>
-        <p>Turn speech into a draft clinical note. Choose languages first, then add audio (upload or record). A licensed clinician must review all output.</p>
+    <div class="hero" aria-label="Welcome">
+        <div>
+            <h1>Clinical documentation, faster and cleaner.</h1>
+            <p>Speak in your language. Get a structured draft note with a transcript you can review. Designed for real hospital workflows—final review stays with the clinician.</p>
+            <div class="hero-actions">
+                <a href="#step-language" class="btn btn-primary" style="text-decoration:none;">Start intake</a>
+                <span class="hero-note">Tip: selecting the correct speaker language improves accuracy.</span>
+            </div>
+        </div>
+        <img class="hero-art" src="/static/images/hospital_hero.svg" alt="Hospital illustration">
     </div>
 
     <div class="workflow" aria-label="Workflow">
@@ -356,10 +587,10 @@
         <div class="error-banner" role="alert">{{ error_message }}</div>
     {% endif %}
 
-    <div class="card">
+    <div class="card" id="step-language">
         <div class="card-head card-head--lang">
-            Step 1 — Language
-            <small>What is spoken in the recording, and what language should the written note use?</small>
+            Step 1 — Language preferences
+            <small>Choose the spoken language for accurate transcription, and the output language for the note.</small>
         </div>
         <div class="card-body">
             <div class="grid-2">
@@ -394,13 +625,16 @@
         </div>
     </div>
 
-    <div class="split-actions">
+    <div class="section-grid" id="step-audio">
         <div class="card">
             <div class="card-head card-head--upload">
-                Step 2a — Upload file
-                <small>Use an existing audio file from your device.</small>
+                Step 2a — Upload audio
+                <small>Upload a recording from your device (recommended for best quality).</small>
             </div>
             <div class="card-body">
+                <div class="panel">
+                    <img src="/static/images/icon_upload.svg" alt="" aria-hidden="true">
+                    <div style="flex:1;">
                 <form method="POST" enctype="multipart/form-data" id="form-upload" class="form-with-processing">
                     <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
                     <input type="hidden" name="note_language" class="sync-note" value="{{ selected_note }}">
@@ -408,15 +642,20 @@
                     <button type="submit" class="btn btn-primary">Generate note from file</button>
                 </form>
                 <p class="help-text">Formats: WAV, MP3, M4A, WebM, OGG.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="card">
             <div class="card-head card-head--record">
-                Step 2b — Record here
-                <small>Speak now; your browser records the microphone.</small>
+                Step 2b — Record in browser
+                <small>Use your microphone for a quick intake (quiet room recommended).</small>
             </div>
             <div class="card-body">
+                <div class="panel">
+                    <img src="/static/images/icon_mic.svg" alt="" aria-hidden="true">
+                    <div style="flex:1;">
                 <p class="help-text" id="mic-unsupported" style="display:none;color:#b91c1c;font-weight:600;">Recording is not supported in this browser. Use upload instead.</p>
                 <form method="POST" enctype="multipart/form-data" id="form-record" class="form-with-processing">
                     <input type="hidden" name="speech_language" class="sync-speech" value="{{ selected_speech }}">
@@ -430,6 +669,47 @@
                     <div class="status-line" id="mic-status"></div>
                 </form>
                 <p class="help-text">Allow the microphone when asked → <strong>Stop</strong> when done → <strong>Generate note</strong>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="step-chat">
+        <div class="card-head card-head--note">
+            Speak to a doctor (AI)
+            <small>Live intake conversation with follow-up questions. A licensed clinician must review all output.</small>
+        </div>
+        <div class="card-body">
+            <div class="notice" style="margin-bottom:0.9rem;">
+                <strong>Safety:</strong> This AI does not diagnose or replace a clinician. If you have severe symptoms (chest pain, trouble breathing, fainting, stroke symptoms, severe bleeding),
+                seek emergency care immediately.
+            </div>
+            <div class="chat-shell">
+                <div class="chat-meta">
+                    Use the language selectors above. For best accuracy, select the spoken language explicitly.
+                </div>
+                <div id="chat-window" class="chat-window" aria-live="polite" aria-label="Conversation"></div>
+
+                <div class="chat-controls">
+                    <div class="chat-row">
+                        <button type="button" class="btn btn-tertiary" id="chat-start">Start</button>
+                        <button type="button" class="btn btn-secondary" id="chat-mic" disabled>Record patient reply</button>
+                        <button type="button" class="btn btn-secondary" id="chat-mic-stop" disabled>Stop</button>
+                        <button type="button" class="btn btn-danger" id="chat-reset" disabled>Reset</button>
+                        <button type="button" class="btn btn-primary" id="chat-finish" disabled>Finish visit</button>
+                    </div>
+                    <div class="chat-row">
+                        <input id="chat-input" class="chat-input" placeholder="Type your reply…" />
+                        <button type="button" class="btn btn-primary" id="chat-send" disabled>Send</button>
+                    </div>
+                    <div id="chat-status" class="status-line"></div>
+                </div>
+
+                <div id="visit-summary" class="summary-box" style="display:none;">
+                    <div class="help-text" style="margin-top:0; font-weight:800; color:#312e81;">Visit summary &amp; suggestions</div>
+                    <pre id="visit-summary-text" style="margin:0.6rem 0 0; white-space:pre-wrap; font-family: ui-sans-serif, system-ui; font-size:0.9rem; line-height:1.55;"></pre>
+                </div>
             </div>
         </div>
     </div>
@@ -437,8 +717,8 @@
     {% if transcription %}
     <div class="card">
         <div class="card-head card-head--transcript">
-            Step 3a — Transcript
-            <small>Raw speech-to-text (verify before trusting).</small>
+            Step 3 — Transcript &amp; translation
+            <small>Review the transcript and (optional) English translation before using the draft note.</small>
         </div>
         <div class="card-body">
             <p class="meta-line">
@@ -462,8 +742,8 @@
     {% set hl = ['a','b','c','d','e'] %}
     <div class="card">
         <div class="card-head card-head--note">
-            Step 3b — Draft subjective note
-            <small>Structured sections below; headings are color-coded for quick scanning.</small>
+            Draft clinical note (subjective)
+            <small>Structured sections for fast clinician review. Always verify against the transcript.</small>
         </div>
         <div class="card-body">
             {% if clinical_note.get('_source') %}
@@ -497,6 +777,10 @@
 
 <script>
 (function () {
+    function prefersReducedMotion() {
+        return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+
     function syncLangHiddens() {
         var speech = document.getElementById('lang-speech');
         var note = document.getElementById('lang-note');
@@ -513,7 +797,26 @@
     document.querySelectorAll('.form-with-processing').forEach(function (form) {
         form.addEventListener('submit', function () {
             var ov = document.getElementById('processing');
-            if (ov) ov.classList.add('on');
+            if (ov) {
+                ov.classList.add('on');
+                ov.setAttribute('aria-busy', 'true');
+            }
+        });
+    });
+
+    // Smooth scroll for “Start intake” link
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+        a.addEventListener('click', function (e) {
+            var id = a.getAttribute('href');
+            if (!id || id.length < 2) return;
+            var el = document.querySelector(id);
+            if (!el) return;
+            e.preventDefault();
+            if (prefersReducedMotion()) {
+                el.scrollIntoView();
+            } else {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
 
@@ -610,6 +913,209 @@
         stopBtn.disabled = true;
         if (statusEl) statusEl.className = 'status-line';
     });
+
+    // --- AI Doctor chat ---
+    var chatWindow = document.getElementById('chat-window');
+    var chatStart = document.getElementById('chat-start');
+    var chatSend = document.getElementById('chat-send');
+    var chatInput = document.getElementById('chat-input');
+    var chatStatus = document.getElementById('chat-status');
+    var chatReset = document.getElementById('chat-reset');
+    var chatFinish = document.getElementById('chat-finish');
+    var chatMic = document.getElementById('chat-mic');
+    var chatMicStop = document.getElementById('chat-mic-stop');
+    var summaryBox = document.getElementById('visit-summary');
+    var summaryText = document.getElementById('visit-summary-text');
+
+    var conversationId = null;
+    var micRecorder = null;
+    var micChunks = [];
+    var micStream = null;
+
+    function getLangPrefs() {
+        var speech = document.getElementById('lang-speech');
+        var note = document.getElementById('lang-note');
+        return {
+            speech_language: speech ? speech.value : 'auto',
+            output_language: note ? note.value : 'en'
+        };
+    }
+
+    function appendBubble(role, text) {
+        if (!chatWindow) return;
+        var div = document.createElement('div');
+        div.className = 'bubble ' + (role === 'user' ? 'user' : 'assistant');
+        div.textContent = text;
+        chatWindow.appendChild(div);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function setChatEnabled(on) {
+        if (chatSend) chatSend.disabled = !on;
+        if (chatReset) chatReset.disabled = !on;
+        if (chatFinish) chatFinish.disabled = !on;
+        if (chatMic) chatMic.disabled = !on;
+        if (chatInput) chatInput.disabled = !on;
+    }
+
+    function setStatus(msg, live) {
+        if (!chatStatus) return;
+        chatStatus.textContent = msg || '';
+        chatStatus.className = live ? 'status-line live' : 'status-line';
+    }
+
+    async function startChat() {
+        setStatus('Starting…', true);
+        var prefs = getLangPrefs();
+        var res = await fetch('/api/chat/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ output_language: prefs.output_language })
+        });
+        var j = await res.json();
+        if (!res.ok) throw new Error(j.error || 'Failed to start');
+        conversationId = j.conversation_id;
+        if (chatWindow) chatWindow.innerHTML = '';
+        if (summaryBox) summaryBox.style.display = 'none';
+        appendBubble('assistant', j.assistant_message || 'Hello—how can I help you today?');
+        setChatEnabled(true);
+        setStatus('Ready.', false);
+    }
+
+    async function sendText() {
+        if (!conversationId) return;
+        var txt = (chatInput && chatInput.value ? chatInput.value : '').trim();
+        if (!txt) return;
+        appendBubble('user', txt);
+        if (chatInput) chatInput.value = '';
+        setStatus('Doctor is typing…', true);
+        var prefs = getLangPrefs();
+        var res = await fetch('/api/chat/message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: conversationId, text: txt, output_language: prefs.output_language })
+        });
+        var j = await res.json();
+        if (!res.ok) throw new Error(j.error || 'Message failed');
+        appendBubble('assistant', j.assistant_message || '');
+        setStatus('Ready.', false);
+    }
+
+    async function finishVisit() {
+        if (!conversationId) return;
+        setStatus('Preparing summary…', true);
+        var prefs = getLangPrefs();
+        var res = await fetch('/api/chat/finish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversation_id: conversationId, output_language: prefs.output_language })
+        });
+        var j = await res.json();
+        if (!res.ok) throw new Error(j.error || 'Finish failed');
+        var s = j.summary || {};
+        var out = [
+            'Summary for clinician:\\n' + (s.summary_for_clinician || ''),
+            '\\nLikely problem list:\\n' + (s.likely_problem_list || ''),
+            '\\nRed flags:\\n' + (s.red_flags || ''),
+            '\\nSelf-care advice:\\n' + (s.self_care_advice || ''),
+            '\\nSuggested next steps:\\n' + (s.suggested_next_steps || ''),
+            '\\nPrescription suggestions (discussion points):\\n' + (s.prescription_suggestions || ''),
+            '\\n' + (s.disclaimer || '')
+        ].join('\\n');
+        if (summaryText) summaryText.textContent = out;
+        if (summaryBox) summaryBox.style.display = 'block';
+        setStatus('Done.', false);
+    }
+
+    function pickMimeType2() {
+        var types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/mpeg'];
+        for (var i = 0; i < types.length; i++) {
+            if (window.MediaRecorder && MediaRecorder.isTypeSupported(types[i])) return types[i];
+        }
+        return '';
+    }
+
+    async function startPatientRecording() {
+        if (!conversationId) return;
+        micChunks = [];
+        setStatus('Requesting microphone…', false);
+        var mimeType = pickMimeType2();
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, autoGainControl: true, channelCount: 1 } });
+        micRecorder = new MediaRecorder(micStream, mimeType ? { mimeType: mimeType } : {});
+        micRecorder.ondataavailable = function (e) {
+            if (e.data && e.data.size > 0) micChunks.push(e.data);
+        };
+        micRecorder.onstop = async function () {
+            try {
+                if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); });
+            } catch (e) {}
+            var blobType = (micRecorder && micRecorder.mimeType) || mimeType || 'audio/webm';
+            var blob = new Blob(micChunks, { type: blobType });
+            if (!blob || blob.size === 0) {
+                setStatus('No audio captured.', false);
+                return;
+            }
+            setStatus('Transcribing…', true);
+            var ext = 'webm';
+            if (blobType.indexOf('mp4') !== -1) ext = 'm4a';
+            else if (blobType.indexOf('ogg') !== -1) ext = 'ogg';
+            var file = new File([blob], 'chat_recording.' + ext, { type: blobType });
+
+            var prefs = getLangPrefs();
+            var fd = new FormData();
+            fd.append('conversation_id', conversationId);
+            fd.append('output_language', prefs.output_language);
+            fd.append('speech_language', prefs.speech_language);
+            fd.append('audio', file);
+
+            var res = await fetch('/api/chat/audio', { method: 'POST', body: fd });
+            var j = await res.json();
+            if (!res.ok) throw new Error(j.error || 'Audio failed');
+            if (j.transcription) appendBubble('user', j.transcription);
+            if (j.assistant_message) appendBubble('assistant', j.assistant_message);
+            setStatus('Ready.', false);
+        };
+        micRecorder.start();
+        if (chatMic) chatMic.disabled = true;
+        if (chatMicStop) chatMicStop.disabled = false;
+        setStatus('Recording…', true);
+    }
+
+    function stopPatientRecording() {
+        if (micRecorder && micRecorder.state !== 'inactive') micRecorder.stop();
+        if (chatMicStop) chatMicStop.disabled = true;
+        if (chatMic) chatMic.disabled = false;
+        setStatus('Stopping…', false);
+    }
+
+    if (chatStart) chatStart.addEventListener('click', function () {
+        startChat().catch(function (e) { setStatus(e.message || String(e), false); });
+    });
+    if (chatSend) chatSend.addEventListener('click', function () {
+        sendText().catch(function (e) { setStatus(e.message || String(e), false); });
+    });
+    if (chatInput) chatInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendText().catch(function (err) { setStatus(err.message || String(err), false); });
+        }
+    });
+    if (chatReset) chatReset.addEventListener('click', function () {
+        conversationId = null;
+        if (chatWindow) chatWindow.innerHTML = '';
+        if (summaryBox) summaryBox.style.display = 'none';
+        setChatEnabled(false);
+        setStatus('', false);
+    });
+    if (chatFinish) chatFinish.addEventListener('click', function () {
+        finishVisit().catch(function (e) { setStatus(e.message || String(e), false); });
+    });
+    if (chatMic) chatMic.addEventListener('click', function () {
+        startPatientRecording().catch(function (e) { setStatus(e.message || String(e), false); });
+    });
+    if (chatMicStop) chatMicStop.addEventListener('click', function () { stopPatientRecording(); });
+
+    setChatEnabled(false);
 
     var pdfBtn = document.getElementById('btn-download-pdf');
     var pdfPayloadEl = document.getElementById('pdf-payload');

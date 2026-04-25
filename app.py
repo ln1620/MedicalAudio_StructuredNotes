@@ -23,12 +23,15 @@ from languages import (
     normalize_speech_language,
 )
 from translate_google import translate_to_english
+from doctor_chat import ConversationStore, build_visit_summary, doctor_reply, initial_doctor_message
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB — room for longer mic recordings
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+_chat_store = ConversationStore()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -146,6 +149,82 @@ def export_pdf():
         as_attachment=True,
         download_name="clinical-note-draft.pdf",
     )
+
+
+@app.route("/api/chat/start", methods=["POST"])
+def chat_start():
+    data = request.get_json(silent=True) or {}
+    out_lang = normalize_note_language(str(data.get("output_language") or "en"))
+    cid = _chat_store.create()
+    msg = initial_doctor_message(out_lang)
+    _chat_store.append(cid, "assistant", msg)
+    return jsonify({"conversation_id": cid, "assistant_message": msg})
+
+
+@app.route("/api/chat/message", methods=["POST"])
+def chat_message():
+    data = request.get_json(silent=True) or {}
+    cid = str(data.get("conversation_id") or "").strip()
+    if not cid:
+        return jsonify({"error": "conversation_id required"}), 400
+    user_text = str(data.get("text") or "").strip()
+    if not user_text:
+        return jsonify({"error": "text required"}), 400
+    out_lang = normalize_note_language(str(data.get("output_language") or "en"))
+
+    _chat_store.append(cid, "user", user_text)
+    hist = _chat_store.get(cid)
+    reply = doctor_reply(hist, output_lang_code=out_lang, user_text=user_text)
+    _chat_store.append(cid, "assistant", reply.assistant_message)
+    return jsonify({"assistant_message": reply.assistant_message})
+
+
+@app.route("/api/chat/audio", methods=["POST"])
+def chat_audio():
+    cid = (request.form.get("conversation_id") or "").strip()
+    if not cid:
+        return jsonify({"error": "conversation_id required"}), 400
+    out_lang = normalize_note_language(str(request.form.get("output_language") or "en"))
+    selected_speech = (request.form.get("speech_language") or "auto").strip() or "auto"
+    whisper_lang = normalize_speech_language(selected_speech)
+
+    file = request.files.get("audio")
+    if not file or not file.filename:
+        return jsonify({"error": "audio file required"}), 400
+    safe_name = secure_filename(file.filename)
+    if not safe_name:
+        return jsonify({"error": "invalid file name"}), 400
+    filepath = os.path.join(UPLOAD_FOLDER, safe_name)
+    file.save(filepath)
+
+    asr = audio_to_text_result(filepath, language=whisper_lang)
+    user_text = asr.text.strip()
+    if not user_text:
+        return jsonify({"error": "empty transcript"}), 400
+
+    _chat_store.append(cid, "user", user_text)
+    hist = _chat_store.get(cid)
+    reply = doctor_reply(hist, output_lang_code=out_lang, user_text=user_text)
+    _chat_store.append(cid, "assistant", reply.assistant_message)
+    return jsonify(
+        {
+            "transcription": user_text,
+            "detected_language": asr.detected_language,
+            "assistant_message": reply.assistant_message,
+        }
+    )
+
+
+@app.route("/api/chat/finish", methods=["POST"])
+def chat_finish():
+    data = request.get_json(silent=True) or {}
+    cid = str(data.get("conversation_id") or "").strip()
+    if not cid:
+        return jsonify({"error": "conversation_id required"}), 400
+    out_lang = normalize_note_language(str(data.get("output_language") or "en"))
+    hist = _chat_store.get(cid)
+    summary = build_visit_summary(hist, output_lang_code=out_lang)
+    return jsonify({"summary": summary.__dict__})
 
 
 if __name__ == "__main__":
